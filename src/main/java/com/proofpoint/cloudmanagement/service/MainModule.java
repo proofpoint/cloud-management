@@ -17,6 +17,8 @@ package com.proofpoint.cloudmanagement.service;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.DiscoveryBinder;
 
 public class MainModule
@@ -26,6 +28,10 @@ public class MainModule
     {
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
+
+        binder.bind(InstancesResource.class).in(Scopes.SINGLETON);
+        binder.bind(NovaInstanceConnector.class).in(Scopes.SINGLETON);
+        ConfigurationModule.bindConfig(binder).to(NovaConfig.class);
 
         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("cloudmanagement");
     }
