@@ -36,7 +36,8 @@ public class TestClient
     private static final String SYSTEM_NAME = "name";
     private static final String OPENSTACK_ID = "id";
     private static final String INVENTORY_BASE_URI = "http://localhost/api";
-    private static final String INVENTORY_AUTHORIZATION = "authorization";
+    private static final String INVENTORY_USER = "readonly";
+    private static final String INVENTORY_PASSWORD = "readonly";
 
     @BeforeMethod
     public void setup()
@@ -48,7 +49,8 @@ public class TestClient
                 new ConfigurationModule(
                         new ConfigurationFactory(
                                 ImmutableMap.of(
-                                        "inventory.authorization-string", INVENTORY_AUTHORIZATION,
+                                        "inventory.user", INVENTORY_USER,
+                                        "inventory.password", INVENTORY_PASSWORD,
                                         "inventory.base-uri", INVENTORY_BASE_URI))));
 
         client = injector.getInstance(InventoryClient.class);
@@ -109,5 +111,11 @@ public class TestClient
         // check get same value twice.
         name = client.getPcmSystemName(OPENSTACK_ID);
         Assert.assertEquals(name, SYSTEM_NAME);
+    }
+
+    @Test
+    public void testAuthorizationEncoding()
+    {
+        Assert.assertEquals(InventoryClient.basicAuthEncode("user", "pass"), "Basic dXNlcjpwYXNz");
     }
 }

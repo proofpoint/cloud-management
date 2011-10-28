@@ -23,7 +23,8 @@ import java.net.URI;
 public class InventoryClientConfig
 {
     private URI inventoryUri;
-    private String authorization;
+    private String userId;
+    private String password;
 
     @NotNull
     public URI getInventoryUri()
@@ -38,15 +39,27 @@ public class InventoryClientConfig
     }
 
     @NotNull
-    public String getAuthorization()
+    public String getUserId()
     {
-        return authorization;
+        return userId;
     }
 
-    @Config("inventory.authorization-string")
-    public void setAuthorization(String authorization)
+    @Config("inventory.user")
+    public void setUserId(String userId)
     {
-        this.authorization = authorization;
+        this.userId = userId;
+    }
+
+    @NotNull
+    public String getPassword()
+    {
+        return password;
+    }
+
+    @Config("inventory.password")
+    public void setPassword(String password)
+    {
+        this.password = password;
     }
 }
 
