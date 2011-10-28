@@ -33,9 +33,10 @@ public class InventoryClientConfig
     }
 
     @Config("inventory.base-uri")
-    public void setInventoryUri(String inventoryUri)
+    public InventoryClientConfig setInventoryUri(String inventoryUri)
     {
-        this.inventoryUri = URI.create(inventoryUri);
+        this.inventoryUri = inventoryUri == null ? null : URI.create(inventoryUri);
+        return this;
     }
 
     @NotNull
@@ -45,9 +46,10 @@ public class InventoryClientConfig
     }
 
     @Config("inventory.user")
-    public void setUserId(String userId)
+    public InventoryClientConfig setUserId(String userId)
     {
         this.userId = userId;
+        return this;
     }
 
     @NotNull
@@ -57,9 +59,10 @@ public class InventoryClientConfig
     }
 
     @Config("inventory.password")
-    public void setPassword(String password)
+    public InventoryClientConfig setPassword(String password)
     {
         this.password = password;
+        return this;
     }
 }
 
