@@ -23,7 +23,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 import java.util.Set;
 
 @JsonSerialize
-public class System
+public class InventorySystem
 {
     private String serialNumber;
     private String systemType;
@@ -847,7 +847,7 @@ public class System
             return false;
         }
 
-        System system = (System) o;
+        InventorySystem system = (InventorySystem) o;
 
         if (fqdn != null ? !fqdn.equals(system.fqdn) : system.fqdn != null) {
             return false;

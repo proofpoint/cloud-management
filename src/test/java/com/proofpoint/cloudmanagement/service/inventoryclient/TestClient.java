@@ -62,7 +62,7 @@ public class TestClient
     public void testGetSystem()
             throws Exception
     {
-        System system = client.getSystem(SYSTEM_NAME);
+        InventorySystem system = client.getSystem(SYSTEM_NAME);
         Assert.assertEquals(system.getSerialNumber(), OPENSTACK_ID);
     }
 
@@ -70,7 +70,7 @@ public class TestClient
     public void testGetMissingSystem()
             throws Exception
     {
-        System system = client.getSystem(UUID.randomUUID().toString());
+        InventorySystem system = client.getSystem(UUID.randomUUID().toString());
         Assert.assertNull(system);
     }
 
@@ -82,7 +82,7 @@ public class TestClient
 
         client.setSystemRoles(SYSTEM_NAME, roles);
 
-        System updated = client.getSystem(SYSTEM_NAME);
+        InventorySystem updated = client.getSystem(SYSTEM_NAME);
         Assert.assertEquals(updated.getRoles(), roles);
     }
 
