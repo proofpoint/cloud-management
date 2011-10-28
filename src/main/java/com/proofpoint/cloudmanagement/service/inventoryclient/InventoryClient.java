@@ -15,6 +15,7 @@
  */
 package com.proofpoint.cloudmanagement.service.inventoryclient;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -30,6 +31,7 @@ import com.proofpoint.http.client.RequestBuilder;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
+import org.jclouds.encryption.internal.Base64;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -49,7 +51,7 @@ public class InventoryClient
     public InventoryClient(InventoryClientConfig config, HttpClient client)
     {
         this.inventoryHost = config.getInventoryUri();
-        this.authorization = config.getAuthorization();
+        this.authorization = basicAuthEncode(config.getUserId(), config.getPassword());
 
         this.client = client;
     }
@@ -100,6 +102,13 @@ public class InventoryClient
                         .build();
 
         client.execute(request, new AssertSuccessHandler()).checkedGet();
+    }
+
+    @VisibleForTesting
+    static String basicAuthEncode(String user, String pass)
+    {
+        return String.format("Basic %s",
+                Base64.encodeBytes(String.format("%s:%s", user, pass).getBytes(Charsets.UTF_8)));
     }
 
     private static class JsonResponseHandler<T> implements ResponseHandler<T, Exception>
