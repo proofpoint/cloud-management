@@ -22,8 +22,8 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.util.Set;
 
-@JsonSerialize(include = JsonSerialize.Inclusion.ALWAYS)
-class System
+@JsonSerialize
+public class System
 {
     private String serialNumber;
     private String systemType;
