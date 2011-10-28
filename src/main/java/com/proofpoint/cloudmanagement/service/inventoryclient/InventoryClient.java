@@ -44,7 +44,7 @@ public class InventoryClient
     private final URI inventoryHost;
     private final String authorization;
 
-    private static final JsonCodec<System> SYSTEM_DATA_CODEC = JsonCodec.jsonCodec(System.class);
+    private static final JsonCodec<InventorySystem> SYSTEM_DATA_CODEC = JsonCodec.jsonCodec(InventorySystem.class);
     private static final JsonCodec<Map<String, String>> MAP_JSON_CODEC = JsonCodec.mapJsonCodec(String.class, String.class);
 
     @Inject
@@ -71,7 +71,7 @@ public class InventoryClient
         return response.get("fqdn");
     }
 
-    public System getSystem(String systemName)
+    public InventorySystem getSystem(String systemName)
             throws Exception
     {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(systemName), "systemName is required");
