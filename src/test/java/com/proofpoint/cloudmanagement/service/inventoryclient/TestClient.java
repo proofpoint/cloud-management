@@ -48,10 +48,11 @@ public class TestClient
                 new InventoryClientModule(),
                 new ConfigurationModule(
                         new ConfigurationFactory(
-                                ImmutableMap.of(
-                                        "inventory.user", INVENTORY_USER,
-                                        "inventory.password", INVENTORY_PASSWORD,
-                                        "inventory.base-uri", INVENTORY_BASE_URI))));
+                                ImmutableMap.<String, String>builder()
+                                        .put("inventory.user", INVENTORY_USER)
+                                        .put("inventory.password", INVENTORY_PASSWORD)
+                                        .put("inventory.base-uri", INVENTORY_BASE_URI)
+                                        .build())));
 
         client = injector.getInstance(InventoryClient.class);
     }
