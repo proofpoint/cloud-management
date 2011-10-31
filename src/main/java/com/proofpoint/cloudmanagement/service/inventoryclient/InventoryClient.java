@@ -33,6 +33,8 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
 import org.jclouds.encryption.internal.Base64;
 
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Map;
@@ -63,8 +65,8 @@ public class InventoryClient
 
         Request request =
                 RequestBuilder.prepareGet()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("pcmsystemname/{instanceId}").build(instanceId))
-                        .setHeader("Authorization", authorization)
+                        .setUri(UriBuilder.fromUri(inventoryHost).path("/pcmsystemname/{instanceId}").build(instanceId))
+                        .setHeader(HttpHeaders.AUTHORIZATION, authorization)
                         .build();
 
         Map<String, String> response = client.execute(request, JsonResponseHandler.newHandler(MAP_JSON_CODEC)).checkedGet();
@@ -79,8 +81,9 @@ public class InventoryClient
 
         Request request =
                 RequestBuilder.prepareGet()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("system/{system}").build(systemName))
+                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
                         .setHeader("Authorization", authorization)
+                        .setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
                         .build();
 
         return client.execute(request, JsonResponseHandler.newHandler(SYSTEM_DATA_CODEC)).checkedGet();
@@ -96,8 +99,9 @@ public class InventoryClient
 
         Request request =
                 RequestBuilder.preparePut()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("system/{system}").build(systemName))
-                        .setHeader("Authorization", authorization)
+                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
+                        .setHeader(HttpHeaders.AUTHORIZATION, authorization)
+                        .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                         .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(MAP_JSON_CODEC, data))
                         .build();
 
@@ -114,15 +118,17 @@ public class InventoryClient
     private static class JsonResponseHandler<T> implements ResponseHandler<T, Exception>
     {
         private final JsonCodec<T> codec;
+        private final Set<Integer> acceptableCodes;
 
         public static <T> JsonResponseHandler<T> newHandler(JsonCodec<T> codec)
         {
-            return new JsonResponseHandler<T>(codec);
+            return new JsonResponseHandler<T>(codec, ImmutableSet.of(200, 201, 202, 204));
         }
 
-        private JsonResponseHandler(JsonCodec<T> codec)
+        private JsonResponseHandler(JsonCodec<T> codec, Set<Integer> acceptableCodes)
         {
             this.codec = codec;
+            this.acceptableCodes = acceptableCodes;
         }
 
         @Override
@@ -137,7 +143,7 @@ public class InventoryClient
         {
             String body = new String(ByteStreams.toByteArray(response.getInputStream()), Charsets.UTF_8);
 
-            if (response.getStatusCode()/100 != 2) {
+            if (!acceptableCodes.contains(response.getStatusCode())) {
                 throw new RuntimeException(String.format("Request failed with code %d: Body -->|%s|<--", response.getStatusCode(), body));
             }
 
