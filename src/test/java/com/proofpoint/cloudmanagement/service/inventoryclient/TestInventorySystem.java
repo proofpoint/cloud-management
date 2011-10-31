@@ -17,14 +17,16 @@ public class TestInventorySystem
         equivalenceTester()
                 .addEquivalentGroup(
                         new InventorySystem("name1"),
-                        new InventorySystem("name1").setSerialNumber("serial1").setRoles(ImmutableSet.of("111")),
-                        new InventorySystem("name1").setSerialNumber("serial2").setRoles(ImmutableSet.of("111")),
-                        new InventorySystem("name1").setSerialNumber("serial1").setRoles(ImmutableSet.of("222")))
+                        new InventorySystem("name1").setSerialNumber("serial1").setPicInstance("inst1").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name1").setSerialNumber("serial2").setPicInstance("inst1").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name1").setSerialNumber("serial1").setPicInstance("inst2").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name1").setSerialNumber("serial1").setPicInstance("inst1").setRoles(ImmutableSet.of("222")))
                 .addEquivalentGroup(
                         new InventorySystem("name2"),
-                        new InventorySystem("name2").setSerialNumber("serial1").setRoles(ImmutableSet.of("111")),
-                        new InventorySystem("name2").setSerialNumber("serial2").setRoles(ImmutableSet.of("111")),
-                        new InventorySystem("name2").setSerialNumber("serial1").setRoles(ImmutableSet.of("222")))
+                        new InventorySystem("name2").setSerialNumber("serial1").setPicInstance("inst1").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name2").setSerialNumber("serial2").setPicInstance("inst1").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name2").setSerialNumber("serial1").setPicInstance("inst2").setRoles(ImmutableSet.of("111")),
+                        new InventorySystem("name2").setSerialNumber("serial1").setPicInstance("inst1").setRoles(ImmutableSet.of("222")))
                 .check();
     }
 
@@ -37,13 +39,18 @@ public class TestInventorySystem
     @Test
     public void testJsonRoundTrip()
     {
-        InventorySystem original = new InventorySystem("test").setSerialNumber("serial").setRoles(ImmutableSet.of("role1", "role2"));
+        InventorySystem original =
+                new InventorySystem("test")
+                        .setSerialNumber("serial")
+                        .setPicInstance("instance")
+                        .setRoles(ImmutableSet.of("role1", "role2"));
 
         String encoded = CODEC.toJson(original);
         InventorySystem decoded = CODEC.fromJson(encoded);
 
         Assert.assertEquals(decoded.getFqdn(), original.getFqdn());
         Assert.assertEquals(decoded.getSerialNumber(), original.getSerialNumber());
+        Assert.assertEquals(decoded.getPicInstance(), original.getPicInstance());
         Assert.assertEquals(decoded.getRoles(), original.getRoles());
     }
 }
