@@ -29,6 +29,7 @@ public class InventorySystem
 {
     private String fqdn;
     private String serialNumber;
+    private String picInstance;
     private Set<String> roles;
 
     public InventorySystem(@JsonProperty("fqdn") String fqdn)
@@ -53,6 +54,19 @@ public class InventorySystem
     public InventorySystem setSerialNumber(String serialNumber)
     {
         this.serialNumber = serialNumber;
+        return this;
+    }
+
+    @JsonProperty("pic_instance")
+    public String getPicInstance()
+    {
+        return picInstance;
+    }
+
+    @JsonProperty("pic_instance")
+    public InventorySystem setPicInstance(String picInstance)
+    {
+        this.picInstance = picInstance;
         return this;
     }
 
