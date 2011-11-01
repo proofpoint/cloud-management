@@ -22,21 +22,21 @@ import org.codehaus.jackson.annotate.JsonProperty;
 public class InstanceCreationRequest
 {
 
-    private String name;
+    private String role;
     private int flavorId;
 
     @JsonCreator
-    public InstanceCreationRequest(@JsonProperty("name") String name, @JsonProperty("flavorId") Integer flavorId)
+    public InstanceCreationRequest(@JsonProperty("role") String role, @JsonProperty("flavorId") Integer flavorId)
     {
         Preconditions.checkNotNull(flavorId, "FlavorId may not be null");
-        this.name = name;
+        this.role = role;
         this.flavorId = flavorId;
     }
 
     @JsonProperty
-    public String getName()
+    public String getRole()
     {
-        return name;
+        return role;
     }
 
     @JsonProperty
@@ -60,7 +60,7 @@ public class InstanceCreationRequest
         if (flavorId != that.flavorId) {
             return false;
         }
-        if (name != null ? !name.equals(that.name) : that.name != null) {
+        if (role != null ? !role.equals(that.role) : that.role != null) {
             return false;
         }
 
@@ -70,7 +70,7 @@ public class InstanceCreationRequest
     @Override
     public int hashCode()
     {
-        int result = name != null ? name.hashCode() : 0;
+        int result = role != null ? role.hashCode() : 0;
         result = 31 * result + flavorId;
         return result;
     }
@@ -79,7 +79,7 @@ public class InstanceCreationRequest
     public String toString()
     {
         return "InstanceCreationRequest{" +
-                "name='" + name + '\'' +
+                "role='" + role + '\'' +
                 ", flavorId=" + flavorId +
                 '}';
     }

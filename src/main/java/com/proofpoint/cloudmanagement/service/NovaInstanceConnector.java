@@ -16,15 +16,19 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.inject.Module;
+import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClient;
+import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
+import com.proofpoint.log.Logger;
 import org.jclouds.Constants;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.ComputeServiceContextFactory;
 import org.jclouds.openstack.nova.NovaClient;
-import org.jclouds.openstack.nova.domain.Address;
 import org.jclouds.openstack.nova.domain.Flavor;
 import org.jclouds.openstack.nova.domain.Image;
 import org.jclouds.openstack.nova.domain.Server;
@@ -32,21 +36,25 @@ import org.jclouds.openstack.nova.domain.Server;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 public class NovaInstanceConnector implements InstanceConnector
 {
+    private static final Logger log = Logger.get(NovaInstanceConnector.class);
 
     private final NovaClient novaClient;
     private static final String NOVA_PROVIDER_NAME = "nova";
     private final String defaultImageRef;
+    private final InventoryClient inventoryClient;
 
     @Inject
-    public NovaInstanceConnector(NovaConfig config)
+    public NovaInstanceConnector(NovaConfig config, InventoryClient inventoryClient)
     {
         Properties overrides = new Properties();
         overrides.setProperty(Constants.PROPERTY_ENDPOINT, config.getLocation());
+
+        this.inventoryClient = inventoryClient;
 
         ComputeServiceContext context = new ComputeServiceContextFactory().createContext(
                 NOVA_PROVIDER_NAME,
@@ -62,12 +70,30 @@ public class NovaInstanceConnector implements InstanceConnector
         defaultImageRef = defaultImage.getSelfURI().toString();
     }
 
-    public Instance createInstance(String name, int flavorId)
+    public Instance createInstance(String role, int flavorId)
     {
         Flavor flavor = novaClient.getFlavor(flavorId);
         Preconditions.checkNotNull(flavor, "No flavor found for flavor id [" + flavorId + "] please verify that this is a valid flavor.");
 
-        Server server = novaClient.createServer(name, defaultImageRef, flavor.getSelfURI().toString());
+        Server server = novaClient.createServer("PCMCreatedInstance", defaultImageRef, flavor.getSelfURI().toString());
+
+        try {
+            String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
+
+            log.info("Server to send to inventory [" + server + "] with id [" + Integer.toString(server.getId()) + "]");
+
+            InventorySystem inventorySystem = new InventorySystem(inventoryName);
+            inventorySystem.setPicInstance(Integer.toString(server.getId()));
+            inventorySystem.setRoles(Sets.<String>newTreeSet(Splitter.on(",").split(role)));
+
+            log.info("InvetorySystem sent to inventory [" + inventorySystem + "]" );
+
+            inventoryClient.patchSystem(inventorySystem);
+        } catch (Exception e) {
+            log.error("Exception caught attempting to talk to inventory :", e);
+            throw new RuntimeException(e);
+        }
+
         return convertToInstance(server);
     }
 
@@ -88,37 +114,37 @@ public class NovaInstanceConnector implements InstanceConnector
 
     public void destroyInstance(String id)
     {
-        Server server = novaClient.getServer(Integer.parseInt(id));
+        Server server = novaClient.getServer(id);
         Preconditions.checkNotNull(server, "No server found for server id [" + id + "] please verify that this server exists.");
 
-        novaClient.deleteServer(server.getUuid());
+        novaClient.deleteServer(id);
     }
 
     private Instance convertToInstance(Server server)
     {
         Server populatedServer = novaClient.getServer(server.getId());
 
-        String id = Integer.toString(populatedServer.getId());
+        String id = server.getUuid();
         String name = populatedServer.getName();
+        String inventoryName = null;
+        InventorySystem inventorySystem = null;
 
-        String flavorRef = populatedServer.getFlavorRef();
+        try {
+            inventoryName = inventoryClient.getPcmSystemName(id);
+
+            inventorySystem = inventoryClient.getSystem(inventoryName);
+        } catch (Exception e) {
+            log.error("Exception caught attempting to talk to inventory :", e);
+            throw new RuntimeException(e);
+        }
+
+        Flavor minimalFlavor = populatedServer.getFlavor();
         String flavorName = null;
-        if (flavorRef != null && flavorRef.contains("/")) {
-            String flavorId = flavorRef.substring(flavorRef.lastIndexOf('/') + 1).trim();
+        if (minimalFlavor != null) {
+            String flavorId = Integer.toString(minimalFlavor.getId());
             Flavor flavor = novaClient.getFlavor(Integer.valueOf(flavorId));
             if (flavor != null) {
                 flavorName = flavor.getName();
-            }
-        }
-
-        String imageRef = populatedServer.getImageRef();
-        String imageName = null;
-
-        if (imageRef != null && imageRef.contains("/")) {
-            String imageId = imageRef.substring(imageRef.lastIndexOf('/') + 1).trim();
-            Image image = novaClient.getImage(Integer.valueOf(imageId));
-            if (image != null) {
-                imageName = image.getName();
             }
         }
 
@@ -126,43 +152,9 @@ public class NovaInstanceConnector implements InstanceConnector
         if (populatedServer.getStatus() != null) {
             status = populatedServer.getStatus().value();
         }
-        return new Instance(id, name, flavorName, imageName, status,
-                getPrivateAddresses(populatedServer), getPublicAddresses(populatedServer));
-    }
 
-    private List<String> getPrivateAddresses(Server populatedServer)
-    {
-        if (populatedServer.getAddresses() != null) {
-            if (populatedServer.getAddresses().getPrivateAddresses() != null) {
-                return ImmutableList.copyOf(
-                        Iterables.transform(populatedServer.getAddresses().getPrivateAddresses(), new Function<Address, String>()
-                        {
-                            @Override
-                            public String apply(@Nullable Address address)
-                            {
-                                return address.getAddress();
-                            }
-                        }));
-            }
-        }
-        return null;
-    }
+        Set<String> roles = inventorySystem.getRoles();
 
-    private List<String> getPublicAddresses(Server populatedServer)
-    {
-        if (populatedServer.getAddresses() != null) {
-            if (populatedServer.getAddresses().getPublicAddresses() != null) {
-                return ImmutableList.copyOf(
-                        Iterables.transform(populatedServer.getAddresses().getPublicAddresses(), new Function<Address, String>()
-                        {
-                            @Override
-                            public String apply(@Nullable Address address)
-                            {
-                                return address.getAddress();
-                            }
-                        }));
-            }
-        }
-        return null;
+        return new Instance(id, name, flavorName, status, inventorySystem.getFqdn(), Joiner.on(", ").join(roles));
     }
 }
