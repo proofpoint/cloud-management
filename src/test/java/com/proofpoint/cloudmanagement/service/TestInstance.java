@@ -40,43 +40,39 @@ public class TestInstance
     {
         equivalenceTester()
                 .addEquivalentGroup(
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "b", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "bb", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "bbb", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "bbbb", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("bbbbb"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("bbbbbb")))
+                        new Instance("test1", "a", "aa", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test1", "b", "aa", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test1", "a", "bb", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test1", "a", "aa", "bbb", "aaaa", "aaaaa"),
+                        new Instance("test1", "a", "aa", "aaa", "bbbb", "aaaaa"),
+                        new Instance("test1", "a", "aa", "aaa", "aaaa", "bbbbb"))
                 .addEquivalentGroup(
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "b", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "bb", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "bbb", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "bbbb", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("bbbbb"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("bbbbbb")))
+                        new Instance("test2", "a", "aa", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test2", "a", "bb", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test2", "b", "aa", "aaa", "aaaa", "aaaaa"),
+                        new Instance("test2", "a", "aa", "bbb", "aaaa", "aaaaa"),
+                        new Instance("test2", "a", "aa", "aaa", "bbbb", "aaaaa"),
+                        new Instance("test2", "a", "aa", "aaa", "aaaa", "bbbbb"))
                 .check();
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullIdThrows()
     {
-        new Instance(null, "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa"));
+        new Instance(null, "a", "aa", "aaa", "aaaa", "aaaaa");
     }
 
     @Test
     public void testJsonMarshalling()
     {
-        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa"));
+        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa", "aaaaa");
         String jsonInstance = instanceJsonCodec.toJson(testInstance);
         Instance encodedInstance = instanceJsonCodec.fromJson(jsonInstance);
 
         assertEquals(testInstance.getId(), encodedInstance.getId());
-        assertEquals(testInstance.getImage(), encodedInstance.getImage());
-        assertEquals(testInstance.getName(), encodedInstance.getName());
+        assertEquals(testInstance.getRole(), encodedInstance.getRole());
         assertEquals(testInstance.getSize(), encodedInstance.getSize());
         assertEquals(testInstance.getStatus(), encodedInstance.getStatus());
-        Assertions.assertEqualsIgnoreOrder(testInstance.getPrivateIps(), encodedInstance.getPrivateIps());
-        Assertions.assertEqualsIgnoreOrder(testInstance.getPublicIps(), encodedInstance.getPublicIps());
+        assertEquals(testInstance.getHostname(), encodedInstance.getHostname());
     }
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import java.util.Collections;
 import java.util.Set;
 
 @JsonSerialize
@@ -44,7 +45,6 @@ public class InventorySystem
         return fqdn;
     }
 
-    @JsonProperty("serial_number")
     public String getSerialNumber()
     {
         return serialNumber;
@@ -73,13 +73,18 @@ public class InventorySystem
     @JsonProperty("roles")
     public String getRolesAsSerializedString()
     {
-        return Joiner.on(',').join(roles);
+       return Joiner.on(',').join(roles);
     }
 
     @JsonProperty("roles")
     public InventorySystem setRolesFromSerializedString(String roles)
     {
-        this.roles = ImmutableSet.copyOf(Splitter.on(',').trimResults().omitEmptyStrings().split(roles));
+        if (roles == null) {
+            this.roles = Collections.emptySet();
+        }
+        else {
+            this.roles = ImmutableSet.copyOf(Splitter.on(',').trimResults().omitEmptyStrings().split(roles));
+        }
         return this;
     }
 
@@ -125,6 +130,7 @@ public class InventorySystem
         return "InventorySystem{" +
                 "fqdn='" + fqdn + '\'' +
                 ", serialNumber='" + serialNumber + '\'' +
+                ", picInstance='" + picInstance + '\'' +
                 ", roles=" + roles +
                 '}';
     }

@@ -52,7 +52,7 @@ public class InstancesResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response createServer(InstanceCreationRequest request)
     {
-        return Response.ok(instanceConnector.createInstance(request.getName(), request.getFlavorId())).build();
+        return Response.ok(instanceConnector.createInstance(request.getRole(), request.getFlavorId())).build();
     }
 
     @DELETE

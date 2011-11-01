@@ -31,6 +31,7 @@ import com.proofpoint.http.client.RequestBuilder;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
+import com.proofpoint.log.Logger;
 import org.jclouds.encryption.internal.Base64;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -45,6 +46,8 @@ public class InventoryClient
     private final HttpClient client;
     private final URI inventoryHost;
     private final String authorization;
+
+    private static final Logger log = Logger.get(InventoryClient.class);
 
     private static final JsonCodec<InventorySystem> SYSTEM_DATA_CODEC = JsonCodec.jsonCodec(InventorySystem.class);
     private static final JsonCodec<Map<String, String>> MAP_JSON_CODEC = JsonCodec.mapJsonCodec(String.class, String.class);
@@ -89,21 +92,20 @@ public class InventoryClient
         return client.execute(request, JsonResponseHandler.newHandler(SYSTEM_DATA_CODEC)).checkedGet();
     }
 
-    public void setSystemRoles(String systemName, Set<String> roles)
+    public void patchSystem(InventorySystem inventorySystem)
         throws Exception
     {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(systemName), "systemName is required");
-        Preconditions.checkNotNull(roles, "roles is null");
-
-        Map<String, String> data = ImmutableMap.of("roles", Joiner.on(',').join(roles));
+        Preconditions.checkNotNull(inventorySystem, "inventorySystem is null");
 
         Request request =
                 RequestBuilder.preparePut()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
+                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(inventorySystem.getFqdn()))
                         .setHeader(HttpHeaders.AUTHORIZATION, authorization)
                         .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                        .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(MAP_JSON_CODEC, data))
+                        .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(SYSTEM_DATA_CODEC, inventorySystem))
                         .build();
+
+        log.info("Patch Request To Inventory [" + request + "] with object [" + inventorySystem + "]");
 
         client.execute(request, new AssertSuccessHandler()).checkedGet();
     }

@@ -113,7 +113,7 @@ public class TestClient
 
         Set<String> roles = ImmutableSet.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
-        client.setSystemRoles(name, roles);
+        client.patchSystem(new InventorySystem(name).setPicInstance(id).setRoles(roles));
 
         InventorySystem updated = client.getSystem(name);
         Assert.assertEquals(updated.getRoles(), roles);
@@ -126,7 +126,7 @@ public class TestClient
         Set<String> roles = ImmutableSet.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
         try {
-            client.setSystemRoles(UUID.randomUUID().toString(), roles);
+            client.patchSystem(new InventorySystem(UUID.randomUUID().toString()).setPicInstance("").setRoles(roles));
         }
         catch (RuntimeException ex) {
             Assert.assertTrue(ex.getMessage().contains("Request failed with code 500"));

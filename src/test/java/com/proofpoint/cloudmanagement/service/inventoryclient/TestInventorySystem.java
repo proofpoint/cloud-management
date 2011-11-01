@@ -49,8 +49,7 @@ public class TestInventorySystem
         InventorySystem decoded = CODEC.fromJson(encoded);
 
         Assert.assertEquals(decoded.getFqdn(), original.getFqdn());
-        Assert.assertEquals(decoded.getSerialNumber(), original.getSerialNumber());
-        Assert.assertEquals(decoded.getPicInstance(), original.getPicInstance());
+            Assert.assertEquals(decoded.getPicInstance(), original.getPicInstance());
         Assert.assertEquals(decoded.getRoles(), original.getRoles());
     }
 }

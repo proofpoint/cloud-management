@@ -15,11 +15,17 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.jclouds.openstack.nova.domain.Flavor;
+import org.jclouds.openstack.nova.domain.Image;
+import org.jclouds.openstack.nova.domain.Server;
 
 import java.util.List;
+import java.util.Set;
 
 public class Instance
 {
@@ -28,28 +34,25 @@ public class Instance
     private final String name;
     private final String status;
     private final String size;
-    private final String image;
-    private final List<String> publicIps;
-    private final List<String> privateIps;
+    private final String hostname;
+    private final String role;
 
     @JsonCreator
     public Instance(
             @JsonProperty("id") String id,
             @JsonProperty("name") String name,
             @JsonProperty("size") String size,
-            @JsonProperty("image") String image,
             @JsonProperty("status") String status,
-            @JsonProperty("privateIps") List<String> privateIps,
-            @JsonProperty("publicIps") List<String> publicIps)
+            @JsonProperty("hostname") String hostname,
+            @JsonProperty("role") String role)
     {
         Preconditions.checkNotNull(id);
         this.id = id;
         this.name = name;
         this.size = size;
         this.status = status;
-        this.publicIps = publicIps;
-        this.privateIps = privateIps;
-        this.image = image;
+        this.hostname = hostname;
+        this.role = role;
     }
 
     @JsonProperty
@@ -77,21 +80,15 @@ public class Instance
     }
 
     @JsonProperty
-    public List<String> getPublicIps()
+    public String getHostname()
     {
-        return publicIps;
+        return hostname;
     }
 
     @JsonProperty
-    public List<String> getPrivateIps()
+    public String getRole()
     {
-        return privateIps;
-    }
-
-    @JsonProperty
-    public String getImage()
-    {
-        return image;
+        return role;
     }
 
     @Override
@@ -127,9 +124,6 @@ public class Instance
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
-                ", image='" + image + '\'' +
-                ", publicIps=" + publicIps +
-                ", privateIps=" + privateIps +
                 '}';
     }
 }
