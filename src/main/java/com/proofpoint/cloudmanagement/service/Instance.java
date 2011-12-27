@@ -15,17 +15,9 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
-import org.jclouds.openstack.nova.domain.Flavor;
-import org.jclouds.openstack.nova.domain.Image;
-import org.jclouds.openstack.nova.domain.Server;
-
-import java.util.List;
-import java.util.Set;
 
 public class Instance
 {
