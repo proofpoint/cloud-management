@@ -17,7 +17,6 @@ package com.proofpoint.cloudmanagement.service;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClient;
 import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClientModule;
 import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;

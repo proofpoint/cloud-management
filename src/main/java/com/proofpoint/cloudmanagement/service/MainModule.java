@@ -30,6 +30,8 @@ public class MainModule
         binder.disableCircularProxies();
 
         binder.bind(InstancesResource.class).in(Scopes.SINGLETON);
+        binder.bind(InstanceResource.class).in(Scopes.SINGLETON);
+        binder.bind(SizeResource.class).in(Scopes.SINGLETON);
         binder.bind(NovaInstanceConnector.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(NovaConfig.class);
 

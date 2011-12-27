@@ -17,10 +17,15 @@ package com.proofpoint.cloudmanagement.service;
 
 public interface InstanceConnector
 {
+    public enum InstanceDestructionStatus {DESTROYED, NOT_FOUND};
 
     public Iterable<Instance> getAllInstances();
 
-    public void destroyInstance(String id);
+    public Instance getInstance(String instanceId);
 
-    public Instance createInstance(String name, int flavorId);
+    public InstanceDestructionStatus destroyInstance(String id);
+
+    public Instance createInstance(String sizeName, String username);
+
+    public Iterable<Size> getSizes();
 }
