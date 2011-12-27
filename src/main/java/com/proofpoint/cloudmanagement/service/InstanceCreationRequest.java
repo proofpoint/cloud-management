@@ -15,34 +15,32 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Preconditions;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class InstanceCreationRequest
 {
 
-    private String role;
-    private int flavorId;
+    private String sizeName;
+    private String username;
 
     @JsonCreator
-    public InstanceCreationRequest(@JsonProperty("role") String role, @JsonProperty("flavorId") Integer flavorId)
+    public InstanceCreationRequest(@JsonProperty("sizeName") String sizeName, @JsonProperty("username") String username)
     {
-        Preconditions.checkNotNull(flavorId, "FlavorId may not be null");
-        this.role = role;
-        this.flavorId = flavorId;
+        this.sizeName = sizeName;
+        this.username = username;
     }
 
     @JsonProperty
-    public String getRole()
+    public String getUsername()
     {
-        return role;
+        return username;
     }
 
     @JsonProperty
-    public int getFlavorId()
+    public String getSizeName()
     {
-        return flavorId;
+        return sizeName;
     }
 
     @Override
@@ -57,10 +55,10 @@ public class InstanceCreationRequest
 
         InstanceCreationRequest that = (InstanceCreationRequest) o;
 
-        if (flavorId != that.flavorId) {
+        if (sizeName != null ? !sizeName.equals(that.sizeName) : that.sizeName != null) {
             return false;
         }
-        if (role != null ? !role.equals(that.role) : that.role != null) {
+        if (username != null ? !username.equals(that.username) : that.username != null) {
             return false;
         }
 
@@ -70,8 +68,8 @@ public class InstanceCreationRequest
     @Override
     public int hashCode()
     {
-        int result = role != null ? role.hashCode() : 0;
-        result = 31 * result + flavorId;
+        int result = sizeName != null ? sizeName.hashCode() : 0;
+        result = 31 * result + (username != null ? username.hashCode() : 0);
         return result;
     }
 
@@ -79,8 +77,8 @@ public class InstanceCreationRequest
     public String toString()
     {
         return "InstanceCreationRequest{" +
-                "role='" + role + '\'' +
-                ", flavorId=" + flavorId +
+                "sizeName='" + sizeName + '\'' +
+                ", username='" + username + '\'' +
                 '}';
     }
 }

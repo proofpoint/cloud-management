@@ -16,11 +16,13 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import com.google.common.collect.MapMaker;
 import com.google.inject.Module;
 import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClient;
 import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
@@ -37,7 +39,8 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class NovaInstanceConnector implements InstanceConnector
 {
@@ -47,6 +50,10 @@ public class NovaInstanceConnector implements InstanceConnector
     private static final String NOVA_PROVIDER_NAME = "nova";
     private final String defaultImageRef;
     private final InventoryClient inventoryClient;
+
+    private final Cache<String, Instance> buildingInstanceCache;
+    private final ConcurrentMap<String, Instance> activeInstanceMap;
+    private final Cache<String, Flavor> flavorCache;
 
     @Inject
     public NovaInstanceConnector(NovaConfig config, InventoryClient inventoryClient)
@@ -68,14 +75,50 @@ public class NovaInstanceConnector implements InstanceConnector
         Preconditions.checkNotNull(defaultImage, "No image found for default image id [" + config.getDefaultImageId() + "] please verify that this image exists");
 
         defaultImageRef = defaultImage.getSelfURI().toString();
+
+        buildingInstanceCache = CacheBuilder.newBuilder()
+            .maximumSize(10000)
+            .expireAfterWrite(15, TimeUnit.SECONDS)
+            .build(
+                new CacheLoader<String, Instance>() {
+
+                    @Override
+                    public Instance load(String serverId)
+                            throws Exception
+                    {
+                        return convertToInstance(serverId);
+                    }
+                });
+
+        flavorCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(24, TimeUnit.HOURS)
+            .build(
+                new CacheLoader<String, Flavor>() {
+
+                    @Override
+                    public Flavor load(String id)
+                            throws Exception
+                    {
+                        return novaClient.getFlavor(id);
+                    }
+                }
+            );
+
+        activeInstanceMap = new MapMaker().makeMap();
     }
 
-    public Instance createInstance(String role, int flavorId)
+    public Instance createInstance(String sizeName, String username)
     {
-        Flavor flavor = novaClient.getFlavor(flavorId);
-        Preconditions.checkNotNull(flavor, "No flavor found for flavor id [" + flavorId + "] please verify that this is a valid flavor.");
+        Flavor flavor = flavorCache.getIfPresent(sizeName);
+        if (flavor == null) {
+            flavorCache.invalidateAll();
+            flavorCache.cleanUp();
+            populateSizeCache();
+            flavor = flavorCache.getIfPresent(sizeName);
+        }
+        Preconditions.checkNotNull(flavor, "No flavor found for flavor id [" + flavor.getName() + "] please verify that this is a valid flavor.");
 
-        Server server = novaClient.createServer("PCMCreatedInstance", defaultImageRef, flavor.getSelfURI().toString());
+        Server server = novaClient.createServer(username + "'s " + flavor.getName() + " instance", defaultImageRef, flavor.getSelfURI().toString());
 
         try {
             String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
@@ -84,17 +127,12 @@ public class NovaInstanceConnector implements InstanceConnector
 
             InventorySystem inventorySystem = new InventorySystem(inventoryName);
             inventorySystem.setPicInstance(Integer.toString(server.getId()));
-            inventorySystem.setRoles(Sets.<String>newTreeSet(Splitter.on(",").split(role)));
-
-            log.info("InvetorySystem sent to inventory [" + inventorySystem + "]" );
-
-            inventoryClient.patchSystem(inventorySystem);
         } catch (Exception e) {
             log.error("Exception caught attempting to talk to inventory :", e);
             throw new RuntimeException(e);
         }
 
-        return convertToInstance(server);
+        return buildingInstanceCache.getUnchecked(server.getUuid());
     }
 
     public Iterable<Instance> getAllInstances()
@@ -107,24 +145,40 @@ public class NovaInstanceConnector implements InstanceConnector
             @Override
             public Instance apply(@Nullable Server server)
             {
-                return convertToInstance(server);
+                return buildingInstanceCache.getUnchecked(server.getUuid());
             }
         });
     }
 
-    public void destroyInstance(String id)
+    public Instance getInstance(String id)
     {
-        Server server = novaClient.getServer(id);
-        Preconditions.checkNotNull(server, "No server found for server id [" + id + "] please verify that this server exists.");
 
-        novaClient.deleteServer(id);
+        return buildingInstanceCache.getUnchecked(id);
     }
 
-    private Instance convertToInstance(Server server)
+    public InstanceDestructionStatus destroyInstance(String id)
     {
-        Server populatedServer = novaClient.getServer(server.getId());
+        Server server = novaClient.getServer(id);
+        if (server == null) {
+            return InstanceDestructionStatus.NOT_FOUND;
+        }
 
-        String id = server.getUuid();
+        novaClient.deleteServer(id);
+
+        activeInstanceMap.remove(id);
+
+        return InstanceDestructionStatus.DESTROYED;
+    }
+
+    private Instance convertToInstance(String serverId)
+    {
+        if(activeInstanceMap.containsKey(serverId)) {
+            return activeInstanceMap.get(serverId);
+        }
+
+        Server populatedServer = novaClient.getServer(serverId);
+
+        String id = serverId;
         String name = populatedServer.getName();
         String inventoryName = null;
         InventorySystem inventorySystem = null;
@@ -153,8 +207,22 @@ public class NovaInstanceConnector implements InstanceConnector
             status = populatedServer.getStatus().value();
         }
 
-        Set<String> roles = inventorySystem.getRoles();
+        Instance instance = new Instance(id, name, flavorName, status, inventorySystem.getFqdn());
+        if(status.equals("ACTIVE")) {
+            activeInstanceMap.put(serverId, instance);
+        }
+        return instance;
+    }
 
-        return new Instance(id, name, flavorName, status, inventorySystem.getFqdn(), Joiner.on(", ").join(roles));
+    public Iterable<Size> getSizes()
+    {
+        ImmutableSet.Builder<Size> sizeSetBuilder = ImmutableSet.<Size>builder();
+        for(Flavor flavor : novaClient.listFlavors()) {
+            Flavor populatedFlavor = flavorCache.getIfPresent(String.valueOf(flavor.getId()));
+            if(!populatedFlavor.getName().contains("deprecated")) {
+                sizeSetBuilder.add(Size.fromFlavor(populatedFlavor));
+            }
+        }
+        return sizeSetBuilder.build();
     }
 }

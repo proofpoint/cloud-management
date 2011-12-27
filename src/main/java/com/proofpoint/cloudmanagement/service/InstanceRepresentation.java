@@ -19,7 +19,9 @@ import com.google.common.base.Preconditions;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
-public class Instance
+import java.net.URI;
+
+public class InstanceRepresentation
 {
 
     private final String id;
@@ -27,14 +29,16 @@ public class Instance
     private final String status;
     private final String size;
     private final String hostname;
+    private final URI self;
 
     @JsonCreator
-    public Instance(
+    public InstanceRepresentation(
             @JsonProperty("id") String id,
             @JsonProperty("name") String name,
             @JsonProperty("size") String size,
             @JsonProperty("status") String status,
-            @JsonProperty("hostname") String hostname)
+            @JsonProperty("hostname") String hostname,
+            URI self)
     {
         Preconditions.checkNotNull(id);
         this.id = id;
@@ -42,6 +46,11 @@ public class Instance
         this.size = size;
         this.status = status;
         this.hostname = hostname;
+        this.self = self;
+    }
+
+    public static InstanceRepresentation fromInstance(Instance instance, URI self) {
+        return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(), instance.getHostname(), self);
     }
 
     @JsonProperty
@@ -74,6 +83,12 @@ public class Instance
         return hostname;
     }
 
+    @JsonProperty
+    public URI getSelf()
+    {
+        return self;
+    }
+
     @Override
     public boolean equals(Object o)
     {
@@ -84,7 +99,7 @@ public class Instance
             return false;
         }
 
-        Instance instance = (Instance) o;
+        InstanceRepresentation instance = (InstanceRepresentation) o;
 
         if (id != null ? !id.equals(instance.id) : instance.id != null) {
             return false;
@@ -107,7 +122,6 @@ public class Instance
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
-                ", hostname='" + hostname + '\'' +
                 '}';
     }
 }

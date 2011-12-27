@@ -30,16 +30,16 @@ public class TestInstanceCreationRequest
     public void testEquivalence()
     {
         equivalenceTester()
-                .addEquivalentGroup(new InstanceCreationRequest("a", 1), new InstanceCreationRequest("a", 1))
-                .addEquivalentGroup(new InstanceCreationRequest("b", 1), new InstanceCreationRequest("b", 1))
-                .addEquivalentGroup(new InstanceCreationRequest("a", 2), new InstanceCreationRequest("a", 2))
+                .addEquivalentGroup(new InstanceCreationRequest("a", "aa"), new InstanceCreationRequest("a", "aa"))
+                .addEquivalentGroup(new InstanceCreationRequest("b", "aa"), new InstanceCreationRequest("b", "aa"))
+                .addEquivalentGroup(new InstanceCreationRequest("a", "bb"), new InstanceCreationRequest("a", "bb"))
                 .check();
     }
 
     @Test
     public void testJsonMarshalling()
     {
-        InstanceCreationRequest instanceCreationRequest = new InstanceCreationRequest("a", 1);
+        InstanceCreationRequest instanceCreationRequest = new InstanceCreationRequest("a","aa");
         String jsonInstanceCreationRequest = icrJsonCodec.toJson(instanceCreationRequest);
         InstanceCreationRequest encodedInstanceCreationRequest = icrJsonCodec.fromJson(jsonInstanceCreationRequest);
         assertEquals(instanceCreationRequest, encodedInstanceCreationRequest);
