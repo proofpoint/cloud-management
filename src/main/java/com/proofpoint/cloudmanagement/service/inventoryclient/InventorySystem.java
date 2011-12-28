@@ -19,10 +19,14 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @JsonSerialize
@@ -32,6 +36,8 @@ public class InventorySystem
     private String serialNumber;
     private String picInstance;
     private Set<String> roles;
+    private List<String> tags;
+
 
     public InventorySystem(@JsonProperty("fqdn") String fqdn)
     {
@@ -73,7 +79,7 @@ public class InventorySystem
     @JsonProperty("roles")
     public String getRolesAsSerializedString()
     {
-       return Joiner.on(',').join(roles);
+       return roles == null ? "" : Joiner.on(',').join(roles);
     }
 
     @JsonProperty("roles")
@@ -97,6 +103,46 @@ public class InventorySystem
     {
         this.roles = ImmutableSet.copyOf(roles);
         return this;
+    }
+
+    @JsonProperty("tags")
+    public List<String> getTags()
+    {
+        return tags;
+    }
+
+/*    public InventorySystem setTags(List<String> tags)
+    {
+        if (tags == null)
+            this.tags = Lists.newArrayList();
+        else
+            this.tags = tags;
+
+        return this;
+    }*/
+
+    @JsonProperty("tags")
+    public InventorySystem setTagsFromSerializedString(String tags)
+    {
+        if (tags == null) {
+            this.tags = Lists.newArrayList();
+        } else {
+            this.tags = new ArrayList<String>(Arrays.asList(tags.split(",")));
+        }
+        return this;
+    }
+    
+    public boolean addTag(String tag)
+    {
+        if (!tags.contains(tag))
+            return tags.add(tag);
+
+        return false;
+    }
+
+    public boolean deleteTag(String tag)
+    {
+        return tags.remove(tag);
     }
 
     @Override
@@ -132,6 +178,7 @@ public class InventorySystem
                 ", serialNumber='" + serialNumber + '\'' +
                 ", picInstance='" + picInstance + '\'' +
                 ", roles=" + roles +
+                ", tags=" + tags +
                 '}';
     }
 }
