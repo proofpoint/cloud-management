@@ -17,9 +17,11 @@ package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
@@ -51,9 +53,9 @@ public class NovaInstanceConnector implements InstanceConnector
     private final String defaultImageRef;
     private final InventoryClient inventoryClient;
 
-    private final Cache<String, Instance> buildingInstanceCache;
+    private final LoadingCache<String, Instance> buildingInstanceCache;
     private final ConcurrentMap<String, Instance> activeInstanceMap;
-    private final Cache<String, Flavor> flavorCache;
+    private final LoadingCache<String, Flavor> flavorCache;
 
     @Inject
     public NovaInstanceConnector(NovaConfig config, InventoryClient inventoryClient)
@@ -107,16 +109,11 @@ public class NovaInstanceConnector implements InstanceConnector
         activeInstanceMap = new MapMaker().makeMap();
     }
 
-    public Instance createInstance(String sizeName, String username)
+    public Instance createInstance(final String sizeName, String username)
     {
-        Flavor flavor = flavorCache.getIfPresent(sizeName);
-        if (flavor == null) {
-            flavorCache.invalidateAll();
-            flavorCache.cleanUp();
-            populateSizeCache();
-            flavor = flavorCache.getIfPresent(sizeName);
-        }
-        Preconditions.checkNotNull(flavor, "No flavor found for flavor id [" + flavor.getName() + "] please verify that this is a valid flavor.");
+        Flavor flavor = getFlavorForSizeName(sizeName);
+
+        Preconditions.checkNotNull(flavor, "No size found for name [" + sizeName + "] please verify that this is a valid size.");
 
         Server server = novaClient.createServer(username + "'s " + flavor.getName() + " instance", defaultImageRef, flavor.getSelfURI().toString());
 
@@ -218,11 +215,28 @@ public class NovaInstanceConnector implements InstanceConnector
     {
         ImmutableSet.Builder<Size> sizeSetBuilder = ImmutableSet.<Size>builder();
         for(Flavor flavor : novaClient.listFlavors()) {
-            Flavor populatedFlavor = flavorCache.getIfPresent(String.valueOf(flavor.getId()));
+            Flavor populatedFlavor = flavorCache.getUnchecked(String.valueOf(flavor.getId()));
             if(!populatedFlavor.getName().contains("deprecated")) {
                 sizeSetBuilder.add(Size.fromFlavor(populatedFlavor));
             }
         }
         return sizeSetBuilder.build();
+    }
+
+    private Flavor getFlavorForSizeName(final String sizeName)
+    {
+        if (flavorCache.asMap().values().isEmpty())
+        {
+            getSizes();
+        }
+
+        return Iterables.find(flavorCache.asMap().values(), new Predicate<Flavor>()
+        {
+            @Override
+            public boolean apply(@Nullable Flavor flavor)
+            {
+                return Size.fromFlavor(flavor).getName().equals(sizeName);  //To change body of implemented methods use File | Settings | File Templates.
+            }
+        });
     }
 }
