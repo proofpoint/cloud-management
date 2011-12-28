@@ -179,7 +179,7 @@ public class NovaInstanceConnector implements InstanceConnector
             Flavor flavor = flavorCache.getUnchecked(String.valueOf(populatedServer.getFlavor().getId()));
             ServerStatus status = populatedServer.getStatus();
 
-            Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(), status.name(), inventorySystem.getFqdn());
+            Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(), status.name(), inventorySystem.getFqdn(), inventorySystem.getTags());
 
             if(status == ServerStatus.ACTIVE) {
                 instanceCache.put(instance.getId(), instance);
@@ -202,6 +202,44 @@ public class NovaInstanceConnector implements InstanceConnector
             }
         }
         return sizeSetBuilder.build();
+    }
+
+    public TagUpdateStatus addTag(String instanceId, String tag)
+    {
+        Instance instance = getInstance(instanceId);
+        if (instance == null)
+            return TagUpdateStatus.NOT_FOUND;
+        try {
+            InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
+            if (inventorySystem == null)
+                return TagUpdateStatus.NOT_FOUND;
+            if (inventorySystem.addTag(tag))
+                inventoryClient.patchSystem(inventorySystem);
+        } catch (Exception e) {
+            log.error("Exception caught attempting to talk to inventory :", e);
+            throw new RuntimeException(e);
+        }
+
+        return TagUpdateStatus.UPDATED;
+    }
+
+    public TagUpdateStatus deleteTag(String instanceId, String tag)
+    {
+        Instance instance = getInstance(instanceId);
+        if (instance == null)
+            return TagUpdateStatus.NOT_FOUND;
+        try {
+            InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
+            if (inventorySystem == null)
+                return TagUpdateStatus.NOT_FOUND;
+            if (inventorySystem.deleteTag(tag))
+                inventoryClient.patchSystem(inventorySystem);
+        } catch (Exception e) {
+            log.error("Exception caught attempting to talk to inventory :", e);
+            throw new RuntimeException(e);
+        }
+
+        return TagUpdateStatus.UPDATED;
     }
 
     private Flavor getFlavorForSizeName(final String sizeName)

@@ -5,6 +5,7 @@ import com.google.common.collect.MapMaker;
 import com.proofpoint.experimental.units.DataSize;
 import com.proofpoint.experimental.units.DataSize.Unit;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -43,7 +44,8 @@ public class InMemoryInstanceConnector implements InstanceConnector
     public Instance createInstance(String sizeName, String username)
     {
         String id = UUID.randomUUID().toString();
-        Instance instance = new Instance(id, username + "'s " + sizeName + " instance", sizeName, "ACTIVE", id + ".foo.com");
+        Instance instance = new Instance(id, username + "'s " + sizeName + " instance", sizeName, "ACTIVE", 
+                id + ".foo.com", Arrays.asList("tag1", "tag2"));
         instanceMap.put(id, instance);
         return instance;
     }
@@ -52,5 +54,23 @@ public class InMemoryInstanceConnector implements InstanceConnector
     public Iterable<Size> getSizes()
     {
         return SIZE_SET;
+    }
+    
+    @Override
+    public TagUpdateStatus addTag(String instanceId, String tag)
+    {
+        Instance instance = instanceMap.get(instanceId);
+        if (instance == null)
+            return TagUpdateStatus.NOT_FOUND;
+        return TagUpdateStatus.UPDATED;
+    }
+
+    @Override
+    public TagUpdateStatus deleteTag(String instanceId, String tag)
+    {
+        Instance instance = instanceMap.get(instanceId);
+        if (instance == null)
+            return TagUpdateStatus.NOT_FOUND;
+        return TagUpdateStatus.UPDATED;
     }
 }
