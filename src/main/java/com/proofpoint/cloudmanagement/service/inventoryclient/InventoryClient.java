@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
+import com.ning.http.util.Base64;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.JsonBodyGenerator;
 import com.proofpoint.http.client.Request;
@@ -30,7 +31,6 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
-import org.jclouds.encryption.internal.Base64;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -112,7 +112,7 @@ public class InventoryClient
     static String basicAuthEncode(String user, String pass)
     {
         return String.format("Basic %s",
-                Base64.encodeBytes(String.format("%s:%s", user, pass).getBytes(Charsets.UTF_8)));
+                Base64.encode(String.format("%s:%s", user, pass).getBytes(Charsets.UTF_8)));
     }
 
     private static class JsonResponseHandler<T> implements ResponseHandler<T, Exception>
