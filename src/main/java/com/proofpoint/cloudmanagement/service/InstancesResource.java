@@ -15,6 +15,7 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import javax.inject.Inject;
@@ -35,7 +36,7 @@ public class InstancesResource
     private final InstanceConnector instanceConnector;
 
     @Inject
-    public InstancesResource(NovaInstanceConnector instanceConnector)
+    public InstancesResource(InstanceConnector instanceConnector)
     {
         this.instanceConnector = instanceConnector;
     }
@@ -44,6 +45,8 @@ public class InstancesResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response getInstances(@Context UriInfo uriInfo)
     {
+        Preconditions.checkNotNull(uriInfo);
+
         ImmutableSet.Builder<InstanceRepresentation> representationBuilder = new ImmutableSet.Builder<InstanceRepresentation>();
         for(Instance instance : instanceConnector.getAllInstances())
         {
@@ -57,6 +60,9 @@ public class InstancesResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response createServer(InstanceCreationRequest request, @Context UriInfo uriInfo)
     {
+        Preconditions.checkNotNull(request);
+        Preconditions.checkNotNull(uriInfo);
+
         Instance instance = instanceConnector.createInstance(request.getSizeName(), request.getUsername());
         return Response.created(InstanceResource.constructSelfUri(uriInfo, instance.getId())).build();
     }
