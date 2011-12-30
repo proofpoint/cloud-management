@@ -108,7 +108,7 @@ public class NovaInstanceConnector implements InstanceConnector
         Flavor flavor = getFlavorForSizeName(sizeName);
         Preconditions.checkNotNull(flavor, "No size found for name [" + sizeName + "] please verify that this is a valid size.");
 
-        Server server = novaClient.createServer(username + "'s " + flavor.getName() + " instance", defaultImageRef, flavor.getSelfURI().toString());
+        Server server = novaClient.createServer(username + "'s " + sizeName + " instance", defaultImageRef, flavor.getSelfURI().toString());
 
         try {
             String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
