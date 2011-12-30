@@ -24,7 +24,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.MapMaker;
 import com.google.inject.Module;
 import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClient;
 import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
@@ -36,12 +35,13 @@ import org.jclouds.openstack.nova.NovaClient;
 import org.jclouds.openstack.nova.domain.Flavor;
 import org.jclouds.openstack.nova.domain.Image;
 import org.jclouds.openstack.nova.domain.Server;
+import org.jclouds.openstack.nova.domain.ServerStatus;
 
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 public class NovaInstanceConnector implements InstanceConnector
@@ -53,8 +53,7 @@ public class NovaInstanceConnector implements InstanceConnector
     private final String defaultImageRef;
     private final InventoryClient inventoryClient;
 
-    private final LoadingCache<String, Instance> buildingInstanceCache;
-    private final ConcurrentMap<String, Instance> activeInstanceMap;
+    private final Cache<String, Instance> instanceCache;
     private final LoadingCache<String, Flavor> flavorCache;
 
     @Inject
@@ -78,22 +77,12 @@ public class NovaInstanceConnector implements InstanceConnector
 
         defaultImageRef = defaultImage.getSelfURI().toString();
 
-        buildingInstanceCache = CacheBuilder.newBuilder()
-            .maximumSize(10000)
-            .expireAfterWrite(15, TimeUnit.SECONDS)
-            .build(
-                new CacheLoader<String, Instance>() {
-
-                    @Override
-                    public Instance load(String serverId)
-                            throws Exception
-                    {
-                        return convertToInstance(serverId);
-                    }
-                });
+        instanceCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(7, TimeUnit.DAYS)
+            .build();
 
         flavorCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(24, TimeUnit.HOURS)
+            .expireAfterWrite(1, TimeUnit.DAYS)
             .build(
                 new CacheLoader<String, Flavor>() {
 
@@ -105,31 +94,32 @@ public class NovaInstanceConnector implements InstanceConnector
                     }
                 }
             );
+    }
 
-        activeInstanceMap = new MapMaker().makeMap();
+    @PostConstruct
+    public void prechargeCaches()
+    {
+        getSizes();
+        getAllInstances();
     }
 
     public Instance createInstance(final String sizeName, String username)
     {
         Flavor flavor = getFlavorForSizeName(sizeName);
-
         Preconditions.checkNotNull(flavor, "No size found for name [" + sizeName + "] please verify that this is a valid size.");
 
         Server server = novaClient.createServer(username + "'s " + flavor.getName() + " instance", defaultImageRef, flavor.getSelfURI().toString());
 
         try {
             String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
-
-            log.info("Server to send to inventory [" + server + "] with id [" + Integer.toString(server.getId()) + "]");
-
             InventorySystem inventorySystem = new InventorySystem(inventoryName);
             inventorySystem.setPicInstance(Integer.toString(server.getId()));
         } catch (Exception e) {
-            log.error("Exception caught attempting to talk to inventory :", e);
+            log.error("Expected to get a server name from inventory for serverId [" + server.getUuid() + "] but caught exception " + e.getMessage(), e);
             throw new RuntimeException(e);
         }
 
-        return buildingInstanceCache.getUnchecked(server.getUuid());
+        return retrieveInstanceByServerId(server.getUuid());
     }
 
     public Iterable<Instance> getAllInstances()
@@ -142,73 +132,64 @@ public class NovaInstanceConnector implements InstanceConnector
             @Override
             public Instance apply(@Nullable Server server)
             {
-                return buildingInstanceCache.getUnchecked(server.getUuid());
+                return retrieveInstanceByServerId(server.getUuid());
             }
         });
     }
 
     public Instance getInstance(String id)
     {
-
-        return buildingInstanceCache.getUnchecked(id);
+        return retrieveInstanceByServerId(id);
     }
 
     public InstanceDestructionStatus destroyInstance(String id)
     {
-        Server server = novaClient.getServer(id);
-        if (server == null) {
+        if (!instanceExists(id)) {
             return InstanceDestructionStatus.NOT_FOUND;
         }
 
         novaClient.deleteServer(id);
 
-        activeInstanceMap.remove(id);
-
         return InstanceDestructionStatus.DESTROYED;
     }
 
-    private Instance convertToInstance(String serverId)
+    private boolean instanceExists(String id)
     {
-        if(activeInstanceMap.containsKey(serverId)) {
-            return activeInstanceMap.get(serverId);
+        return (instanceCache.getIfPresent(id) != null || novaClient.getServer(id) != null);
+    }
+
+    private Instance retrieveInstanceByServerId(String serverId)
+    {
+        Instance cachedInstance = instanceCache.getIfPresent(serverId);
+
+        if(cachedInstance != null) {
+            return cachedInstance;
         }
 
         Server populatedServer = novaClient.getServer(serverId);
 
-        String id = serverId;
-        String name = populatedServer.getName();
-        String inventoryName = null;
-        InventorySystem inventorySystem = null;
+        if(populatedServer == null) {
+            return null;
+        }
 
         try {
-            inventoryName = inventoryClient.getPcmSystemName(id);
+            String inventoryName = inventoryClient.getPcmSystemName(populatedServer.getUuid());
+            InventorySystem inventorySystem = inventoryClient.getSystem(inventoryName);
 
-            inventorySystem = inventoryClient.getSystem(inventoryName);
-        } catch (Exception e) {
-            log.error("Exception caught attempting to talk to inventory :", e);
+            Flavor flavor = flavorCache.getUnchecked(String.valueOf(populatedServer.getFlavor().getId()));
+            ServerStatus status = populatedServer.getStatus();
+
+            Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(), status.name(), inventorySystem.getFqdn());
+
+            if(status == ServerStatus.ACTIVE) {
+                instanceCache.put(instance.getId(), instance);
+            }
+            return instance;
+        }
+        catch (Exception e) {
+            log.error("Expected to find an instance for serverId [" + serverId + "] but caught exception " + e.getMessage(), e);
             throw new RuntimeException(e);
         }
-
-        Flavor minimalFlavor = populatedServer.getFlavor();
-        String flavorName = null;
-        if (minimalFlavor != null) {
-            String flavorId = Integer.toString(minimalFlavor.getId());
-            Flavor flavor = novaClient.getFlavor(Integer.valueOf(flavorId));
-            if (flavor != null) {
-                flavorName = flavor.getName();
-            }
-        }
-
-        String status = null;
-        if (populatedServer.getStatus() != null) {
-            status = populatedServer.getStatus().value();
-        }
-
-        Instance instance = new Instance(id, name, flavorName, status, inventorySystem.getFqdn());
-        if(status.equals("ACTIVE")) {
-            activeInstanceMap.put(serverId, instance);
-        }
-        return instance;
     }
 
     public Iterable<Size> getSizes()
