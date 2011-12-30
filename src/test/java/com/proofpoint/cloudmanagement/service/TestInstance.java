@@ -66,6 +66,7 @@ public class TestInstance
         Instance encodedInstance = instanceJsonCodec.fromJson(jsonInstance);
 
         assertEquals(testInstance.getId(), encodedInstance.getId());
+        assertEquals(testInstance.getName(), encodedInstance.getName());
         assertEquals(testInstance.getSize(), encodedInstance.getSize());
         assertEquals(testInstance.getStatus(), encodedInstance.getStatus());
         assertEquals(testInstance.getHostname(), encodedInstance.getHostname());

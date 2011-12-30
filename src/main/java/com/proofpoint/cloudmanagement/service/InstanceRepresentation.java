@@ -31,13 +31,12 @@ public class InstanceRepresentation
     private final String hostname;
     private final URI self;
 
-    @JsonCreator
     public InstanceRepresentation(
-            @JsonProperty("id") String id,
-            @JsonProperty("name") String name,
-            @JsonProperty("size") String size,
-            @JsonProperty("status") String status,
-            @JsonProperty("hostname") String hostname,
+            String id,
+            String name,
+            String size,
+            String status,
+            String hostname,
             URI self)
     {
         Preconditions.checkNotNull(id);
