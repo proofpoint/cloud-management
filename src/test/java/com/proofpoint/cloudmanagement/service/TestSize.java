@@ -54,10 +54,10 @@ public class TestSize
         String json = sizeJsonCodec.toJson(testSize);
         Map<String, Object> encodedSize = mapJsonCodec.fromJson(json);
 
-        assertEquals(testSize.getName(), encodedSize.get("size"));
-        assertEquals(testSize.getCores(), encodedSize.get("cores"));
-        assertEquals(testSize.getMemory(), encodedSize.get("memory"));
-        assertEquals(testSize.getDisk(), encodedSize.get("disk"));
+        assertEquals(encodedSize.get("name"), testSize.getName());
+        assertEquals(encodedSize.get("cores"), testSize.getCores());
+        assertEquals(encodedSize.get("memory"), testSize.getMemory());
+        assertEquals(encodedSize.get("disk"), testSize.getDisk());
     }
 
     @Test
