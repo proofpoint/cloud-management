@@ -26,13 +26,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-
 import java.net.URI;
 
+import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.assertEquals;
-import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
 
 public class TestInstancesResource
 {

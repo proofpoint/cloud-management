@@ -16,7 +16,6 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Preconditions;
-import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.net.URI;

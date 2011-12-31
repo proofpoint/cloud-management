@@ -49,7 +49,6 @@ public class TestServer
     public void setup()
             throws Exception
     {
-        // TODO: wrap all this stuff in a TestBootstrap class
         Injector injector = Guice.createInjector(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
