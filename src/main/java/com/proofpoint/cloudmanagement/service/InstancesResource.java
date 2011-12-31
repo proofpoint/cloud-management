@@ -58,7 +58,7 @@ public class InstancesResource
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createServer(InstanceCreationRequest request, @Context UriInfo uriInfo)
+    public Response createInstance(InstanceCreationRequest request, @Context UriInfo uriInfo)
     {
         Preconditions.checkNotNull(request);
         Preconditions.checkNotNull(uriInfo);

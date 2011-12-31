@@ -50,7 +50,7 @@ public class TestInstancesResource
     @Test
     public void testCreateInstaces()
     {
-        Response response = instancesResource.createServer(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
+        Response response = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
 
         Instance createdInstance = Iterables.getFirst(inMemoryInstanceConnector.getAllInstances(), null);
 
@@ -72,8 +72,8 @@ public class TestInstancesResource
     @Test
     public void testCreateAndGetInstances()
     {
-        Response createResponse1 = instancesResource.createServer(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
-        Response createResponse2 = instancesResource.createServer(new InstanceCreationRequest("m1.small", "mattstep"), INSTANCES_URI_INFO);
+        Response createResponse1 = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
+        Response createResponse2 = instancesResource.createInstance(new InstanceCreationRequest("m1.small", "mattstep"), INSTANCES_URI_INFO);
         Response getResponse = instancesResource.getInstances(INSTANCES_URI_INFO);
 
         assertEquals(createResponse1.getStatus(), Status.CREATED.getStatusCode());
@@ -101,12 +101,12 @@ public class TestInstancesResource
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullUriInfoThrowsForCreateServer()
     {
-        instancesResource.createServer(new InstanceCreationRequest("foo","bar"), null);
+        instancesResource.createInstance(new InstanceCreationRequest("foo", "bar"), null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullRequestThrowsForCreateServer()
     {
-        instancesResource.createServer(null, INSTANCES_URI_INFO);
+        instancesResource.createInstance(null, INSTANCES_URI_INFO);
     }
 }
