@@ -2,7 +2,6 @@ package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
-import com.google.common.collect.Sets;
 import com.proofpoint.experimental.units.DataSize;
 import com.proofpoint.experimental.units.DataSize.Unit;
 
