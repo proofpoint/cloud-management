@@ -73,6 +73,6 @@ public class TestInstanceRepresentation
         assertEquals(instanceRepresentation.getSize(), encodedInstanceRepresentation.get("size"));
         assertEquals(instanceRepresentation.getStatus(), encodedInstanceRepresentation.get("status"));
         assertEquals(instanceRepresentation.getHostname(), encodedInstanceRepresentation.get("hostname"));
-        assertEquals(instanceRepresentation.getSelf(), encodedInstanceRepresentation.get("self"));
+        assertEquals(instanceRepresentation.getSelf().toString(), encodedInstanceRepresentation.get("self"));
     }
 }
