@@ -38,8 +38,10 @@ public class InstanceResource
     private final InstanceConnector instanceConnector;
 
     @Inject
-    public InstanceResource(NovaInstanceConnector instanceConnector)
+    public InstanceResource(InstanceConnector instanceConnector)
     {
+        Preconditions.checkNotNull(instanceConnector);
+
         this.instanceConnector = instanceConnector;
     }
 
@@ -47,6 +49,9 @@ public class InstanceResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response getInstance(@PathParam("id") String instanceId, @Context UriInfo uriInfo)
     {
+        Preconditions.checkNotNull(instanceId);
+        Preconditions.checkNotNull(uriInfo);
+
         Instance instance = instanceConnector.getInstance(instanceId);
         if (instance == null) {
             return Response.status(Status.NOT_FOUND).build();
@@ -55,11 +60,11 @@ public class InstanceResource
     }
 
     @DELETE
-    public Response deleteServer(@PathParam("id") String serverId)
+    public Response deleteInstance(@PathParam("id") String instanceId)
     {
-        Preconditions.checkNotNull(serverId, "Server ID cannot be null");
+        Preconditions.checkNotNull(instanceId, "Instance ID cannot be null");
 
-        if(instanceConnector.destroyInstance(serverId) == InstanceDestructionStatus.NOT_FOUND) {
+        if(instanceConnector.destroyInstance(instanceId) == InstanceDestructionStatus.NOT_FOUND) {
             return Response.status(Status.NOT_FOUND).build();
         }
 
