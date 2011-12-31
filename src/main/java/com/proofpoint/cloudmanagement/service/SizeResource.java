@@ -1,5 +1,7 @@
 package com.proofpoint.cloudmanagement.service;
 
+import com.google.common.base.Preconditions;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -13,8 +15,10 @@ public class SizeResource
     private final InstanceConnector instanceConnector;
 
     @Inject
-    public SizeResource(NovaInstanceConnector instanceConnector)
+    public SizeResource(InstanceConnector instanceConnector)
     {
+        Preconditions.checkNotNull(instanceConnector);
+
         this.instanceConnector = instanceConnector;
     }
 
