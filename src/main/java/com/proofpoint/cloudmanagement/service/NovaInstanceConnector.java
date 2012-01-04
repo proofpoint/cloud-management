@@ -213,8 +213,10 @@ public class NovaInstanceConnector implements InstanceConnector
             InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
             if (inventorySystem == null)
                 return TagUpdateStatus.NOT_FOUND;
-            if (inventorySystem.addTag(tag))
+            if (inventorySystem.addTag(tag)) {
                 inventoryClient.patchSystem(inventorySystem);
+                instanceCache.invalidate(instanceId);
+            }
         } catch (Exception e) {
             log.error("Exception caught attempting to talk to inventory :", e);
             throw new RuntimeException(e);
@@ -232,8 +234,10 @@ public class NovaInstanceConnector implements InstanceConnector
             InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
             if (inventorySystem == null)
                 return TagUpdateStatus.NOT_FOUND;
-            if (inventorySystem.deleteTag(tag))
+            if (inventorySystem.deleteTag(tag)) {
                 inventoryClient.patchSystem(inventorySystem);
+                instanceCache.invalidate(instanceId);
+            }
         } catch (Exception e) {
             log.error("Exception caught attempting to talk to inventory :", e);
             throw new RuntimeException(e);
