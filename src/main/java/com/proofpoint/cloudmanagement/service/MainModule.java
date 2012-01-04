@@ -32,7 +32,8 @@ public class MainModule
         binder.bind(InstancesResource.class).in(Scopes.SINGLETON);
         binder.bind(InstanceResource.class).in(Scopes.SINGLETON);
         binder.bind(SizeResource.class).in(Scopes.SINGLETON);
-        binder.bind(NovaInstanceConnector.class).in(Scopes.SINGLETON);
+        binder.bind(TagResource.class).in(Scopes.SINGLETON);
+        binder.bind(InstanceConnector.class).to(NovaInstanceConnector.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(NovaConfig.class);
 
         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("cloudmanagement");

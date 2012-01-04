@@ -18,6 +18,9 @@ package com.proofpoint.cloudmanagement.service;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 
@@ -38,30 +41,30 @@ public class TestInstance
     {
         equivalenceTester()
                 .addEquivalentGroup(
-                        new Instance("test1", "a", "aa", "aaa", "aaaa"),
-                        new Instance("test1", "b", "aa", "aaa", "aaaa"),
-                        new Instance("test1", "a", "bb", "aaa", "aaaa"),
-                        new Instance("test1", "a", "aa", "bbb", "aaaa"),
-                        new Instance("test1", "a", "aa", "aaa", "bbbb"))
+                        new Instance("test1", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa")),
+                        new Instance("test1", "b", "aa", "aaa", "aaaa", Arrays.asList("bbb")),
+                        new Instance("test1", "a", "bb", "aaa", "aaaa", Arrays.asList("ccc")),
+                        new Instance("test1", "a", "aa", "bbb", "aaaa", Arrays.asList("ddd")),
+                        new Instance("test1", "a", "aa", "aaa", "bbbb", Arrays.asList("aaa")))
                 .addEquivalentGroup(
-                        new Instance("test2", "a", "aa", "aaa", "aaaa"),
-                        new Instance("test2", "a", "bb", "aaa", "aaaa"),
-                        new Instance("test2", "b", "aa", "aaa", "aaaa"),
-                        new Instance("test2", "a", "aa", "bbb", "aaaa"),
-                        new Instance("test2", "a", "aa", "aaa", "bbbb"))
+                        new Instance("test2", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa")),
+                        new Instance("test2", "a", "bb", "aaa", "aaaa", Arrays.asList("bbb")),
+                        new Instance("test2", "b", "aa", "aaa", "aaaa", Arrays.asList("ccc")),
+                        new Instance("test2", "a", "aa", "bbb", "aaaa", Arrays.asList("ddd")),
+                        new Instance("test2", "a", "aa", "aaa", "bbbb", Arrays.asList("aaa")))
                 .check();
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullIdThrows()
     {
-        new Instance(null, "a", "aa", "aaa", "aaaa");
+        new Instance(null, "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"));
     }
 
     @Test
     public void testJsonMarshalling()
     {
-        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa");
+        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa", "bbb"));
         String jsonInstance = instanceJsonCodec.toJson(testInstance);
         Instance encodedInstance = instanceJsonCodec.fromJson(jsonInstance);
 
@@ -70,5 +73,6 @@ public class TestInstance
         assertEquals(testInstance.getSize(), encodedInstance.getSize());
         assertEquals(testInstance.getStatus(), encodedInstance.getStatus());
         assertEquals(testInstance.getHostname(), encodedInstance.getHostname());
+        assertEquals(testInstance.getTags(), encodedInstance.getTags());
     }
 }

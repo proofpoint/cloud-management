@@ -19,6 +19,8 @@ import com.google.common.base.Preconditions;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
+import java.util.List;
+
 public class Instance
 {
 
@@ -27,6 +29,7 @@ public class Instance
     private final String status;
     private final String size;
     private final String hostname;
+    private final List<String> tags;
 
     @JsonCreator
     public Instance(
@@ -34,7 +37,8 @@ public class Instance
             @JsonProperty("name") String name,
             @JsonProperty("size") String size,
             @JsonProperty("status") String status,
-            @JsonProperty("hostname") String hostname)
+            @JsonProperty("hostname") String hostname,
+            @JsonProperty("tags") List<String> tags)
     {
         Preconditions.checkNotNull(id);
         this.id = id;
@@ -42,6 +46,7 @@ public class Instance
         this.size = size;
         this.status = status;
         this.hostname = hostname;
+        this.tags = tags;
     }
 
     @JsonProperty
@@ -72,6 +77,12 @@ public class Instance
     public String getHostname()
     {
         return hostname;
+    }
+    
+    @JsonProperty
+    public List<String> getTags()
+    {
+        return tags;
     }
 
     @Override
@@ -108,6 +119,7 @@ public class Instance
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
                 ", hostname='" + hostname + '\'' +
+                ", tags='" + tags + '\'' +
                 '}';
     }
 }
