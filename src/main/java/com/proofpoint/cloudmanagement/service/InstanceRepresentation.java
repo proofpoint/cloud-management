@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.net.URI;
+import java.util.List;
 
 public class InstanceRepresentation
 {
@@ -28,6 +29,7 @@ public class InstanceRepresentation
     private final String status;
     private final String size;
     private final String hostname;
+    private final List<String> tags;
     private final URI self;
 
     public InstanceRepresentation(
@@ -36,6 +38,7 @@ public class InstanceRepresentation
             String size,
             String status,
             String hostname,
+            List<String> tags,
             URI self)
     {
         Preconditions.checkNotNull(id);
@@ -44,11 +47,13 @@ public class InstanceRepresentation
         this.size = size;
         this.status = status;
         this.hostname = hostname;
+        this.tags = tags;
         this.self = self;
     }
 
     public static InstanceRepresentation fromInstance(Instance instance, URI self) {
-        return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(), instance.getHostname(), self);
+        return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(),
+                instance.getHostname(), instance.getTags(), self);
     }
 
     @JsonProperty
@@ -79,6 +84,12 @@ public class InstanceRepresentation
     public String getHostname()
     {
         return hostname;
+    }
+    
+    @JsonProperty
+    public List<String> getTags()
+    {
+        return tags;
     }
 
     @JsonProperty
@@ -120,6 +131,7 @@ public class InstanceRepresentation
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
+                ", tags='" + tags + '\'' +
                 '}';
     }
 }
