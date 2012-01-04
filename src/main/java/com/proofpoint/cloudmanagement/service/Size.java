@@ -59,6 +59,12 @@ public class Size
         return disk.convertToMostSuccinctDataSize().toString();
     }
 
+    @JsonProperty
+    public double getCost()
+    {
+        return cores + Objects.firstNonNull(memory.convertTo(Unit.GIGABYTE).getValue(), 0.0) + Objects.firstNonNull(disk.convertTo(Unit.TERABYTE).getValue(), 0.0);
+    }
+
     @Override
     public boolean equals(Object o)
     {
