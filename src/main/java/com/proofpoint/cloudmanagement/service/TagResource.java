@@ -12,9 +12,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 @Path("/v1/instance/{instance_id}/{tag}")
-public class TagResource {
+public class TagResource
+{
     private final InstanceConnector instanceConnector;
-    
+
     @Inject
     public TagResource(InstanceConnector instanceConnector)
     {
@@ -22,14 +23,15 @@ public class TagResource {
 
         this.instanceConnector = instanceConnector;
     }
-    
+
     @PUT
     public Response addTag(@PathParam("instance_id") String instanceId, @PathParam("tag") String tag)
     {
         Preconditions.checkNotNull(instanceId, "Instance id cannot be null");
 
-        if (instanceConnector.addTag(instanceId, tag) == InstanceConnector.TagUpdateStatus.NOT_FOUND)
+        if (instanceConnector.addTag(instanceId, tag) == InstanceConnector.TagUpdateStatus.NOT_FOUND) {
             return Response.status(Status.NOT_FOUND).build();
+        }
 
         return Response.ok().build();
     }
@@ -39,8 +41,9 @@ public class TagResource {
     {
         Preconditions.checkNotNull(instanceId, "Instance id cannot be null");
 
-        if (instanceConnector.deleteTag(instanceId, tag) == InstanceConnector.TagUpdateStatus.NOT_FOUND)
+        if (instanceConnector.deleteTag(instanceId, tag) == InstanceConnector.TagUpdateStatus.NOT_FOUND) {
             return Response.status(Status.NOT_FOUND).build();
+        }
 
         return Response.noContent().build();
     }

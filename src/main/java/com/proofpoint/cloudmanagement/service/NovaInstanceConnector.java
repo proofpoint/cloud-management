@@ -79,22 +79,23 @@ public class NovaInstanceConnector implements InstanceConnector
         defaultImageRef = defaultImage.getSelfURI().toString();
 
         instanceCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(7, TimeUnit.DAYS)
-            .build();
+                .expireAfterWrite(7, TimeUnit.DAYS)
+                .build();
 
         flavorCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(1, TimeUnit.DAYS)
-            .build(
-                new CacheLoader<String, Flavor>() {
+                .expireAfterWrite(1, TimeUnit.DAYS)
+                .build(
+                        new CacheLoader<String, Flavor>()
+                        {
 
-                    @Override
-                    public Flavor load(String id)
-                            throws Exception
-                    {
-                        return novaClient.getFlavor(id);
-                    }
-                }
-            );
+                            @Override
+                            public Flavor load(String id)
+                                    throws Exception
+                            {
+                                return novaClient.getFlavor(id);
+                            }
+                        }
+                );
     }
 
     @PostConstruct
@@ -115,7 +116,8 @@ public class NovaInstanceConnector implements InstanceConnector
             String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
             InventorySystem inventorySystem = new InventorySystem(inventoryName);
             inventorySystem.setPicInstance(Integer.toString(server.getId()));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Expected to get a server name from inventory for serverId [" + server.getUuid() + "] but caught exception " + e.getMessage(), e);
             throw new RuntimeException(e);
         }
@@ -163,13 +165,13 @@ public class NovaInstanceConnector implements InstanceConnector
     {
         Instance cachedInstance = instanceCache.getIfPresent(serverId);
 
-        if(cachedInstance != null) {
+        if (cachedInstance != null) {
             return cachedInstance;
         }
 
         Server populatedServer = novaClient.getServer(serverId);
 
-        if(populatedServer == null) {
+        if (populatedServer == null) {
             return null;
         }
 
@@ -183,7 +185,7 @@ public class NovaInstanceConnector implements InstanceConnector
             Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(),
                     status.name(), inventorySystem.getFqdn(), Arrays.asList(inventorySystem.getTags().split(",")));
 
-            if(status == ServerStatus.ACTIVE) {
+            if (status == ServerStatus.ACTIVE) {
                 instanceCache.put(instance.getId(), instance);
             }
             return instance;
@@ -197,9 +199,9 @@ public class NovaInstanceConnector implements InstanceConnector
     public Iterable<Size> getSizes()
     {
         ImmutableSet.Builder<Size> sizeSetBuilder = ImmutableSet.<Size>builder();
-        for(Flavor flavor : novaClient.listFlavors()) {
+        for (Flavor flavor : novaClient.listFlavors()) {
             Flavor populatedFlavor = flavorCache.getUnchecked(String.valueOf(flavor.getId()));
-            if(!populatedFlavor.getName().contains("deprecated")) {
+            if (!populatedFlavor.getName().contains("deprecated")) {
                 sizeSetBuilder.add(Size.fromFlavor(populatedFlavor));
             }
         }
@@ -209,17 +211,20 @@ public class NovaInstanceConnector implements InstanceConnector
     public TagUpdateStatus addTag(String instanceId, String tag)
     {
         Instance instance = getInstance(instanceId);
-        if (instance == null)
+        if (instance == null) {
             return TagUpdateStatus.NOT_FOUND;
+        }
         try {
             InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
-            if (inventorySystem == null)
+            if (inventorySystem == null) {
                 return TagUpdateStatus.NOT_FOUND;
+            }
             if (inventorySystem.addTag(tag)) {
                 inventoryClient.patchSystem(inventorySystem);
                 instanceCache.invalidate(instanceId);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Exception caught attempting to talk to inventory :", e);
             throw new RuntimeException(e);
         }
@@ -230,17 +235,20 @@ public class NovaInstanceConnector implements InstanceConnector
     public TagUpdateStatus deleteTag(String instanceId, String tag)
     {
         Instance instance = getInstance(instanceId);
-        if (instance == null)
+        if (instance == null) {
             return TagUpdateStatus.NOT_FOUND;
+        }
         try {
             InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
-            if (inventorySystem == null)
+            if (inventorySystem == null) {
                 return TagUpdateStatus.NOT_FOUND;
+            }
             if (inventorySystem.deleteTag(tag)) {
                 inventoryClient.patchSystem(inventorySystem);
                 instanceCache.invalidate(instanceId);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Exception caught attempting to talk to inventory :", e);
             throw new RuntimeException(e);
         }
@@ -250,8 +258,7 @@ public class NovaInstanceConnector implements InstanceConnector
 
     private Flavor getFlavorForSizeName(final String sizeName)
     {
-        if (flavorCache.asMap().values().isEmpty())
-        {
+        if (flavorCache.asMap().values().isEmpty()) {
             getSizes();
         }
 

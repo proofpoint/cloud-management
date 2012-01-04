@@ -44,8 +44,7 @@ public class Size
     @JsonProperty
     public String getMemory()
     {
-        if (memory == null)
-        {
+        if (memory == null) {
             return null;
         }
         return memory.convertToMostSuccinctDataSize().toString();
@@ -54,8 +53,7 @@ public class Size
     @JsonProperty
     public String getDisk()
     {
-        if (disk == null)
-        {
+        if (disk == null) {
             return null;
         }
         return disk.convertToMostSuccinctDataSize().toString();

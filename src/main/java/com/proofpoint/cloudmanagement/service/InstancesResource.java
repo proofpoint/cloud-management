@@ -48,8 +48,7 @@ public class InstancesResource
         Preconditions.checkNotNull(uriInfo);
 
         ImmutableSet.Builder<InstanceRepresentation> representationBuilder = new ImmutableSet.Builder<InstanceRepresentation>();
-        for(Instance instance : instanceConnector.getAllInstances())
-        {
+        for (Instance instance : instanceConnector.getAllInstances()) {
             representationBuilder.add(InstanceRepresentation.fromInstance(instance, InstanceResource.constructSelfUri(uriInfo, instance.getId())));
         }
         return Response.ok(representationBuilder.build()).build();

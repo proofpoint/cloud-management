@@ -91,7 +91,7 @@ public class InventoryClient
     }
 
     public void patchSystem(InventorySystem inventorySystem)
-        throws Exception
+            throws Exception
     {
         Preconditions.checkNotNull(inventorySystem, "inventorySystem is null");
 
@@ -147,8 +147,9 @@ public class InventoryClient
                 throw new RuntimeException(String.format("Request failed with code %d: Body -->|%s|<--", response.getStatusCode(), body));
             }
 
-            if (Strings.isNullOrEmpty(body))
+            if (Strings.isNullOrEmpty(body)) {
                 return null;
+            }
 
             try {
                 return codec.fromJson(body);

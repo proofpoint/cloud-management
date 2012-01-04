@@ -26,7 +26,7 @@ import javax.inject.Singleton;
 import java.util.concurrent.Executors;
 
 public class InventoryClientModule
-    implements Module
+        implements Module
 {
     public void configure(Binder binder)
     {
