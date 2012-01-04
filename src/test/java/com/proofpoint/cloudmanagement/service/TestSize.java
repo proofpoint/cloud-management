@@ -37,13 +37,13 @@ public class TestSize
     {
         equivalenceTester()
                 .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
+                        new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
                 .addEquivalentGroup(new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
+                        new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
                 .addEquivalentGroup(new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.BYTE)))
+                        new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.BYTE)))
                 .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.BYTE)))
+                        new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.BYTE)))
                 .check();
     }
 

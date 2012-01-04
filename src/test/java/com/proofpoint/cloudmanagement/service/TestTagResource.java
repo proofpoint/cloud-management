@@ -5,12 +5,12 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
 import java.util.UUID;
 
 import static org.testng.AssertJUnit.assertEquals;
 
-public class TestTagResource {
+public class TestTagResource
+{
     private TagResource tagResource;
     private InMemoryInstanceConnector instanceConnector;
 
@@ -22,7 +22,8 @@ public class TestTagResource {
     }
 
     @Test
-    public void testAddTag() {
+    public void testAddTag()
+    {
         Instance createdInstance = instanceConnector.createInstance("m1.tiny", "wyan");
         Response response1 = tagResource.addTag(createdInstance.getId(), "new tag");
         assertEquals(Status.OK.getStatusCode(), response1.getStatus());
@@ -31,7 +32,8 @@ public class TestTagResource {
     }
 
     @Test
-    public void testDeleteTag() {
+    public void testDeleteTag()
+    {
         Instance createdInstance = instanceConnector.createInstance("m1.tiny", "wyan");
         Response response1 = tagResource.deleteTag(createdInstance.getId(), "new tag");
         assertEquals(Status.NO_CONTENT.getStatusCode(), response1.getStatus());
@@ -40,12 +42,14 @@ public class TestTagResource {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void testDeleteWithNullIdThrows() {
+    public void testDeleteWithNullIdThrows()
+    {
         tagResource.deleteTag(null, "new tag");
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void testAddWithNullIdThrows() {
+    public void testAddWithNullIdThrows()
+    {
         tagResource.addTag(null, "new tag");
     }
 
