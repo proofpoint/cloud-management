@@ -40,6 +40,7 @@ import org.jclouds.openstack.nova.domain.ServerStatus;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -179,7 +180,8 @@ public class NovaInstanceConnector implements InstanceConnector
             Flavor flavor = flavorCache.getUnchecked(String.valueOf(populatedServer.getFlavor().getId()));
             ServerStatus status = populatedServer.getStatus();
 
-            Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(), status.name(), inventorySystem.getFqdn(), inventorySystem.getTags());
+            Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(),
+                    status.name(), inventorySystem.getFqdn(), Arrays.asList(inventorySystem.getTags().split(",")));
 
             if(status == ServerStatus.ACTIVE) {
                 instanceCache.put(instance.getId(), instance);

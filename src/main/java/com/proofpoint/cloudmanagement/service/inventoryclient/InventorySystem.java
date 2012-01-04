@@ -106,12 +106,12 @@ public class InventorySystem
     }
 
     @JsonProperty("tags")
-    public List<String> getTags()
+    public String getTags()
     {
-        return tags;
+        return tags == null ? "" : Joiner.on(",").join(tags);
     }
 
-/*    public InventorySystem setTags(List<String> tags)
+    public InventorySystem setTags(List<String> tags)
     {
         if (tags == null)
             this.tags = Lists.newArrayList();
@@ -119,7 +119,7 @@ public class InventorySystem
             this.tags = tags;
 
         return this;
-    }*/
+    }
 
     @JsonProperty("tags")
     public InventorySystem setTagsFromSerializedString(String tags)
