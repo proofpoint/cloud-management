@@ -34,7 +34,7 @@ public class InMemoryInstanceConnector implements InstanceConnector
     @Override
     public InstanceDestructionStatus destroyInstance(String id)
     {
-        if(instanceMap.remove(id) != null) {
+        if (instanceMap.remove(id) != null) {
             return InstanceDestructionStatus.DESTROYED;
         }
         return InstanceDestructionStatus.NOT_FOUND;
@@ -44,7 +44,7 @@ public class InMemoryInstanceConnector implements InstanceConnector
     public Instance createInstance(String sizeName, String username)
     {
         String id = UUID.randomUUID().toString();
-        Instance instance = new Instance(id, username + "'s " + sizeName + " instance", sizeName, "ACTIVE", 
+        Instance instance = new Instance(id, username + "'s " + sizeName + " instance", sizeName, "ACTIVE",
                 id + ".foo.com", Arrays.asList("tag1", "tag2"));
         instanceMap.put(id, instance);
         return instance;
@@ -55,13 +55,14 @@ public class InMemoryInstanceConnector implements InstanceConnector
     {
         return SIZE_SET;
     }
-    
+
     @Override
     public TagUpdateStatus addTag(String instanceId, String tag)
     {
         Instance instance = instanceMap.get(instanceId);
-        if (instance == null)
+        if (instance == null) {
             return TagUpdateStatus.NOT_FOUND;
+        }
         return TagUpdateStatus.UPDATED;
     }
 
@@ -69,8 +70,9 @@ public class InMemoryInstanceConnector implements InstanceConnector
     public TagUpdateStatus deleteTag(String instanceId, String tag)
     {
         Instance instance = instanceMap.get(instanceId);
-        if (instance == null)
+        if (instance == null) {
             return TagUpdateStatus.NOT_FOUND;
+        }
         return TagUpdateStatus.UPDATED;
     }
 }

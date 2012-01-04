@@ -79,7 +79,7 @@ public class InventorySystem
     @JsonProperty("roles")
     public String getRolesAsSerializedString()
     {
-       return roles == null ? "" : Joiner.on(',').join(roles);
+        return roles == null ? "" : Joiner.on(',').join(roles);
     }
 
     @JsonProperty("roles")
@@ -113,10 +113,12 @@ public class InventorySystem
 
     public InventorySystem setTags(List<String> tags)
     {
-        if (tags == null)
+        if (tags == null) {
             this.tags = Lists.newArrayList();
-        else
+        }
+        else {
             this.tags = tags;
+        }
 
         return this;
     }
@@ -126,16 +128,18 @@ public class InventorySystem
     {
         if (tags == null) {
             this.tags = Lists.newArrayList();
-        } else {
+        }
+        else {
             this.tags = new ArrayList<String>(Arrays.asList(tags.split(",")));
         }
         return this;
     }
-    
+
     public boolean addTag(String tag)
     {
-        if (!tags.contains(tag))
+        if (!tags.contains(tag)) {
             return tags.add(tag);
+        }
 
         return false;
     }

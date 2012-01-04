@@ -78,7 +78,7 @@ public class Instance
     {
         return hostname;
     }
-    
+
     @JsonProperty
     public List<String> getTags()
     {

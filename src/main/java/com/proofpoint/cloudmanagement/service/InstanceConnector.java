@@ -15,13 +15,21 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import java.util.List;
-
 public interface InstanceConnector
 {
-    public enum InstanceDestructionStatus {DESTROYED, NOT_FOUND};
+    public enum InstanceDestructionStatus
+    {
+        DESTROYED, NOT_FOUND
+    }
 
-    public enum TagUpdateStatus {UPDATED, NOT_FOUND};
+    ;
+
+    public enum TagUpdateStatus
+    {
+        UPDATED, NOT_FOUND
+    }
+
+    ;
 
     public Iterable<Instance> getAllInstances();
 
@@ -32,7 +40,7 @@ public interface InstanceConnector
     public Instance createInstance(String sizeName, String username);
 
     public Iterable<Size> getSizes();
-    
+
     public TagUpdateStatus addTag(String instanceId, String tag);
 
     public TagUpdateStatus deleteTag(String instanceId, String tag);

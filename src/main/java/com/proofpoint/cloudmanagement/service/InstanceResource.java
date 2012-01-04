@@ -64,7 +64,7 @@ public class InstanceResource
     {
         Preconditions.checkNotNull(instanceId, "Instance ID cannot be null");
 
-        if(instanceConnector.destroyInstance(instanceId) == InstanceDestructionStatus.NOT_FOUND) {
+        if (instanceConnector.destroyInstance(instanceId) == InstanceDestructionStatus.NOT_FOUND) {
             return Response.status(Status.NOT_FOUND).build();
         }
 
