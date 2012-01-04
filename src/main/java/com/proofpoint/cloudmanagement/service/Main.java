@@ -17,6 +17,7 @@ package com.proofpoint.cloudmanagement.service;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClientModule;
 import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;
 import com.proofpoint.experimental.jmx.JmxHttpModule;
@@ -41,7 +42,8 @@ public class Main
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
-                new MainModule());
+                new MainModule(),
+                new InventoryClientModule());
 
         Injector injector = app.strictConfig().initialize();
         injector.getInstance(Announcer.class).start();

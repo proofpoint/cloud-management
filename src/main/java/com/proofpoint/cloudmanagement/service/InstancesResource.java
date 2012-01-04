@@ -16,17 +16,18 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 @Path("/v1/instance")
 public class InstancesResource
@@ -35,35 +36,34 @@ public class InstancesResource
     private final InstanceConnector instanceConnector;
 
     @Inject
-    public InstancesResource(NovaInstanceConnector instanceConnector)
+    public InstancesResource(InstanceConnector instanceConnector)
     {
         this.instanceConnector = instanceConnector;
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstances()
+    public Response getInstances(@Context UriInfo uriInfo)
     {
-        return Response.ok(instanceConnector.getAllInstances()).build();
+        Preconditions.checkNotNull(uriInfo);
+
+        ImmutableSet.Builder<InstanceRepresentation> representationBuilder = new ImmutableSet.Builder<InstanceRepresentation>();
+        for(Instance instance : instanceConnector.getAllInstances())
+        {
+            representationBuilder.add(InstanceRepresentation.fromInstance(instance, InstanceResource.constructSelfUri(uriInfo, instance.getId())));
+        }
+        return Response.ok(representationBuilder.build()).build();
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createServer(InstanceCreationRequest request)
+    public Response createInstance(InstanceCreationRequest request, @Context UriInfo uriInfo)
     {
-        return Response.ok(instanceConnector.createInstance(request.getName(), request.getFlavorId())).build();
-    }
+        Preconditions.checkNotNull(request);
+        Preconditions.checkNotNull(uriInfo);
 
-    @DELETE
-    @Path("/{id}")
-    public Response deleteServer(@PathParam("id") String serverId)
-    {
-
-        Preconditions.checkNotNull(serverId, "Server ID cannot be null");
-
-        instanceConnector.destroyInstance(serverId);
-
-        return Response.noContent().build();
+        Instance instance = instanceConnector.createInstance(request.getSizeName(), request.getUsername());
+        return Response.created(InstanceResource.constructSelfUri(uriInfo, instance.getId())).build();
     }
 }

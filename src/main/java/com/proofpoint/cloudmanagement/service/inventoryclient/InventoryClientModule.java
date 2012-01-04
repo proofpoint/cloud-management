@@ -13,28 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.cloudmanagement.service;
+package com.proofpoint.cloudmanagement.service.inventoryclient;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.DiscoveryBinder;
+import com.proofpoint.http.client.HttpClient;
 
-public class MainModule
-        implements Module
+import javax.inject.Singleton;
+import java.util.concurrent.Executors;
+
+public class InventoryClientModule
+    implements Module
 {
     public void configure(Binder binder)
     {
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        binder.bind(InstancesResource.class).in(Scopes.SINGLETON);
-        binder.bind(InstanceResource.class).in(Scopes.SINGLETON);
-        binder.bind(SizeResource.class).in(Scopes.SINGLETON);
-        binder.bind(NovaInstanceConnector.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder).to(NovaConfig.class);
+        ConfigurationModule.bindConfig(binder).to(InventoryClientConfig.class);
+        binder.bind(InventoryClient.class).in(Scopes.SINGLETON);
+    }
 
-        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("cloudmanagement");
+    @Provides
+    @Singleton
+    HttpClient getHttpClient()
+    {
+        return new HttpClient(Executors.newSingleThreadExecutor());
     }
 }

@@ -15,9 +15,7 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.collect.ImmutableList;
 import com.proofpoint.json.JsonCodec;
-import com.proofpoint.testing.Assertions;
 import org.testng.annotations.Test;
 
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
@@ -40,43 +38,37 @@ public class TestInstance
     {
         equivalenceTester()
                 .addEquivalentGroup(
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "b", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "bb", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "bbb", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "bbbb", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("bbbbb"), ImmutableList.of("aaaaaa")),
-                        new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("bbbbbb")))
+                        new Instance("test1", "a", "aa", "aaa", "aaaa"),
+                        new Instance("test1", "b", "aa", "aaa", "aaaa"),
+                        new Instance("test1", "a", "bb", "aaa", "aaaa"),
+                        new Instance("test1", "a", "aa", "bbb", "aaaa"),
+                        new Instance("test1", "a", "aa", "aaa", "bbbb"))
                 .addEquivalentGroup(
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "b", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "bb", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "bbb", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "bbbb", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("bbbbb"), ImmutableList.of("aaaaaa")),
-                        new Instance("test2", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("bbbbbb")))
+                        new Instance("test2", "a", "aa", "aaa", "aaaa"),
+                        new Instance("test2", "a", "bb", "aaa", "aaaa"),
+                        new Instance("test2", "b", "aa", "aaa", "aaaa"),
+                        new Instance("test2", "a", "aa", "bbb", "aaaa"),
+                        new Instance("test2", "a", "aa", "aaa", "bbbb"))
                 .check();
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullIdThrows()
     {
-        new Instance(null, "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa"));
+        new Instance(null, "a", "aa", "aaa", "aaaa");
     }
 
     @Test
     public void testJsonMarshalling()
     {
-        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa", ImmutableList.of("aaaaa"), ImmutableList.of("aaaaaa"));
+        Instance testInstance = new Instance("test1", "a", "aa", "aaa", "aaaa");
         String jsonInstance = instanceJsonCodec.toJson(testInstance);
         Instance encodedInstance = instanceJsonCodec.fromJson(jsonInstance);
 
         assertEquals(testInstance.getId(), encodedInstance.getId());
-        assertEquals(testInstance.getImage(), encodedInstance.getImage());
         assertEquals(testInstance.getName(), encodedInstance.getName());
         assertEquals(testInstance.getSize(), encodedInstance.getSize());
         assertEquals(testInstance.getStatus(), encodedInstance.getStatus());
-        Assertions.assertEqualsIgnoreOrder(testInstance.getPrivateIps(), encodedInstance.getPrivateIps());
-        Assertions.assertEqualsIgnoreOrder(testInstance.getPublicIps(), encodedInstance.getPublicIps());
+        assertEquals(testInstance.getHostname(), encodedInstance.getHostname());
     }
 }
