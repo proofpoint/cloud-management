@@ -51,7 +51,8 @@ public class InstanceRepresentation
         this.self = self;
     }
 
-    public static InstanceRepresentation fromInstance(Instance instance, URI self) {
+    public static InstanceRepresentation fromInstance(Instance instance, URI self)
+    {
         return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(),
                 instance.getHostname(), instance.getTags(), self);
     }
@@ -85,7 +86,7 @@ public class InstanceRepresentation
     {
         return hostname;
     }
-    
+
     @JsonProperty
     public List<String> getTags()
     {

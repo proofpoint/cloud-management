@@ -39,7 +39,7 @@ public class TestInstanceCreationRequest
     @Test
     public void testJsonMarshalling()
     {
-        InstanceCreationRequest instanceCreationRequest = new InstanceCreationRequest("a","aa");
+        InstanceCreationRequest instanceCreationRequest = new InstanceCreationRequest("a", "aa");
         String jsonInstanceCreationRequest = icrJsonCodec.toJson(instanceCreationRequest);
         InstanceCreationRequest encodedInstanceCreationRequest = icrJsonCodec.fromJson(jsonInstanceCreationRequest);
         assertEquals(instanceCreationRequest, encodedInstanceCreationRequest);

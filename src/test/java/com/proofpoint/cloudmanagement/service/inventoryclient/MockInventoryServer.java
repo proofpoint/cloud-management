@@ -32,7 +32,7 @@ public class MockInventoryServer
     private final Set<Map<String, String>> inventory = Sets.newHashSet();
 
     public static class MockInventoryServerModule
-        implements Module
+            implements Module
     {
         @Override
         public void configure(Binder binder)
