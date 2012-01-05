@@ -11,7 +11,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-@Path("/v1/instance/{instance_id: \\w}/tag/{tag: \\w}")
+@Path("/v1/instance/{instance_id: [\\w-]+}/tag/{tag: [\\w-]+}")
 public class TagResource
 {
     private final InstanceConnector instanceConnector;
