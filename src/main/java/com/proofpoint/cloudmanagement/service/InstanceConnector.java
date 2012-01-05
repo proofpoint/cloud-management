@@ -17,19 +17,9 @@ package com.proofpoint.cloudmanagement.service;
 
 public interface InstanceConnector
 {
-    public enum InstanceDestructionStatus
-    {
-        DESTROYED, NOT_FOUND
-    }
+    public enum InstanceDestructionStatus {DESTROYED, NOT_FOUND};
 
-    ;
-
-    public enum TagUpdateStatus
-    {
-        UPDATED, NOT_FOUND
-    }
-
-    ;
+    public enum TagUpdateStatus {UPDATED, NOT_FOUND};
 
     public Iterable<Instance> getAllInstances();
 
