@@ -31,7 +31,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
-@Path("/v1/instance/{id}")
+@Path("/v1/instance/{id: \\w}")
 public class InstanceResource
 {
 
