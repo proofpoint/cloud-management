@@ -183,7 +183,7 @@ public class NovaInstanceConnector implements InstanceConnector
             ServerStatus status = populatedServer.getStatus();
 
             Instance instance = new Instance(populatedServer.getUuid(), populatedServer.getName(), flavor.getName(),
-                    status.name(), inventorySystem.getFqdn(), Arrays.asList(inventorySystem.getTags().split(",")));
+                    status.name(), inventorySystem.getFqdn(), inventorySystem.getTagList());
 
             if (status == ServerStatus.ACTIVE) {
                 instanceCache.put(instance.getId(), instance);
