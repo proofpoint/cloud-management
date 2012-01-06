@@ -18,6 +18,7 @@ package com.proofpoint.cloudmanagement.service.inventoryclient;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -105,6 +106,10 @@ public class InventorySystem
         return this;
     }
 
+    public List<String> getTagList() {
+        return tags;
+    }
+
     @JsonProperty("tags")
     public String getTags()
     {
@@ -126,7 +131,7 @@ public class InventorySystem
     @JsonProperty("tags")
     public InventorySystem setTagsFromSerializedString(String tags)
     {
-        if (tags == null) {
+        if (Strings.isNullOrEmpty(tags)) {
             this.tags = Lists.newArrayList();
         }
         else {
