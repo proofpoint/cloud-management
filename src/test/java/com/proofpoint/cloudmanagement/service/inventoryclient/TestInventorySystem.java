@@ -5,6 +5,7 @@ import com.proofpoint.json.JsonCodec;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
@@ -54,6 +55,14 @@ public class TestInventorySystem
         Assert.assertEquals(decoded.getFqdn(), original.getFqdn());
         Assert.assertEquals(decoded.getPicInstance(), original.getPicInstance());
         Assert.assertEquals(decoded.getRoles(), original.getRoles());
+        Assert.assertEquals(decoded.getTagList(), original.getTagList());
+        Assert.assertEquals(decoded.getTags(), original.getTags());
+
+        original.setTags(new ArrayList<String>());
+        encoded = CODEC.toJson(original);
+        decoded = CODEC.fromJson(encoded);
+
+        Assert.assertEquals(decoded.getTagList(), original.getTagList());
         Assert.assertEquals(decoded.getTags(), original.getTags());
     }
 }
