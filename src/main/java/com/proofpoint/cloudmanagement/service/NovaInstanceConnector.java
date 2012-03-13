@@ -83,7 +83,7 @@ public class NovaInstanceConnector implements InstanceConnector
                 .build();
 
         flavorCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(1, TimeUnit.DAYS)
+                .expireAfterWrite(365, TimeUnit.DAYS)
                 .build(
                         new CacheLoader<String, Flavor>()
                         {
@@ -96,11 +96,6 @@ public class NovaInstanceConnector implements InstanceConnector
                             }
                         }
                 );
-    }
-
-    @PostConstruct
-    public void prechargeCaches()
-    {
         getSizes();
         getAllInstances();
     }

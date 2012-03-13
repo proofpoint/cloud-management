@@ -21,6 +21,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientConfig;
 
 import javax.inject.Singleton;
 import java.util.concurrent.Executors;
@@ -34,13 +35,14 @@ public class InventoryClientModule
         binder.disableCircularProxies();
 
         ConfigurationModule.bindConfig(binder).to(InventoryClientConfig.class);
+        ConfigurationModule.bindConfig(binder).to(HttpClientConfig.class);
         binder.bind(InventoryClient.class).in(Scopes.SINGLETON);
     }
 
     @Provides
     @Singleton
-    HttpClient getHttpClient()
+    HttpClient getHttpClient(HttpClientConfig config)
     {
-        return new HttpClient(Executors.newSingleThreadExecutor());
+        return new HttpClient(Executors.newSingleThreadExecutor(), config);
     }
 }
