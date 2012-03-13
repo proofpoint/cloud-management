@@ -83,7 +83,7 @@ public class NovaInstanceConnector implements InstanceConnector
                 .build();
 
         flavorCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(1, TimeUnit.DAYS)
+                .expireAfterWrite(365, TimeUnit.DAYS)
                 .build(
                         new CacheLoader<String, Flavor>()
                         {
@@ -96,11 +96,6 @@ public class NovaInstanceConnector implements InstanceConnector
                             }
                         }
                 );
-    }
-
-    @PostConstruct
-    public void prechargeCaches()
-    {
         getSizes();
         getAllInstances();
     }
@@ -116,6 +111,7 @@ public class NovaInstanceConnector implements InstanceConnector
             String inventoryName = inventoryClient.getPcmSystemName(server.getUuid());
             InventorySystem inventorySystem = new InventorySystem(inventoryName);
             inventorySystem.setPicInstance(Integer.toString(server.getId()));
+            inventoryClient.patchSystem(inventorySystem);
         }
         catch (Exception e) {
             log.error("Expected to get a server name from inventory for serverId [" + server.getUuid() + "] but caught exception " + e.getMessage(), e);
