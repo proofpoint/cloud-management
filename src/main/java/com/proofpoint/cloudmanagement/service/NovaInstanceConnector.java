@@ -254,9 +254,7 @@ public class NovaInstanceConnector implements InstanceConnector
 
     private Flavor getFlavorForSizeName(final String sizeName)
     {
-        if (flavorCache.asMap().values().isEmpty()) {
-            getSizes();
-        }
+        getSizes();
 
         return Iterables.find(flavorCache.asMap().values(), new Predicate<Flavor>()
         {
