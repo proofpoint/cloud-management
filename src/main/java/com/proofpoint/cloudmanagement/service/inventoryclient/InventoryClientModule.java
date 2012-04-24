@@ -22,6 +22,7 @@ import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.HttpClientModule;
 
 import javax.inject.Singleton;
 import java.util.concurrent.Executors;
@@ -37,12 +38,6 @@ public class InventoryClientModule
         ConfigurationModule.bindConfig(binder).to(InventoryClientConfig.class);
         ConfigurationModule.bindConfig(binder).to(HttpClientConfig.class);
         binder.bind(InventoryClient.class).in(Scopes.SINGLETON);
-    }
-
-    @Provides
-    @Singleton
-    HttpClient getHttpClient(HttpClientConfig config)
-    {
-        return new HttpClient(Executors.newSingleThreadExecutor(), config);
+        binder.install(new HttpClientModule("inventory", Inventory.class));
     }
 }

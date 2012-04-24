@@ -22,6 +22,7 @@ import com.google.inject.Injector;
 import com.proofpoint.cloudmanagement.service.inventoryclient.MockInventoryServer.MockInventoryServerModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.client.UnexpectedResponseException;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -119,20 +120,13 @@ public class TestClient
         Assert.assertEquals(updated.getRoles(), roles);
     }
 
-    @Test
+    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "Request failed with code 500.*")
     public void testSetSystemRolesForMissingSystem()
             throws Exception
     {
         Set<String> roles = ImmutableSet.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
-        try {
-            client.patchSystem(new InventorySystem(UUID.randomUUID().toString()).setPicInstance("").setRoles(roles));
-        }
-        catch (RuntimeException ex) {
-            Assert.assertTrue(ex.getMessage().contains("Request failed with code 500"));
-            return;
-        }
-        Assert.fail("Expected an exception to be thrown");
+        client.patchSystem(new InventorySystem(UUID.randomUUID().toString()).setPicInstance("").setRoles(roles));
     }
 
     @Test
