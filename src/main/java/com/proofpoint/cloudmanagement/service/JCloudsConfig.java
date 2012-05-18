@@ -19,39 +19,46 @@ import com.proofpoint.configuration.Config;
 
 import javax.validation.constraints.NotNull;
 
-public class NovaConfig
+public class JCloudsConfig
 {
-
     private String location;
     private String user;
-    private String apiKey;
+    private String secret;
     private String defaultImageId;
+    private String defaultLocationId;
 
-    @Config("nova.location")
-    public NovaConfig setLocation(String location)
+    @Config("jclouds.location")
+    public JCloudsConfig setLocation(String location)
     {
         this.location = location;
         return this;
     }
 
-    @Config("nova.user")
-    public NovaConfig setUser(String user)
+    @Config("jclouds.user")
+    public JCloudsConfig setUser(String user)
     {
         this.user = user;
         return this;
     }
 
-    @Config("nova.api-key")
-    public NovaConfig setApiKey(String apiKey)
+    @Config("jclouds.secret")
+    public JCloudsConfig setSecret(String secret)
     {
-        this.apiKey = apiKey;
+        this.secret = secret;
         return this;
     }
 
-    @Config("nova.default-image-id")
-    public NovaConfig setDefaultImageId(String defaultImageId)
+    @Config("jclouds.default-image-id")
+    public JCloudsConfig setDefaultImageId(String defaultImageId)
     {
         this.defaultImageId = defaultImageId;
+        return this;
+    }
+
+    @Config("jclouds.default-location-id")
+    public JCloudsConfig setDefaultLocationId(String defaultLocationId)
+    {
+        this.defaultLocationId = defaultLocationId;
         return this;
     }
 
@@ -68,9 +75,9 @@ public class NovaConfig
     }
 
     @NotNull
-    public String getApiKey()
+    public String getSecret()
     {
-        return this.apiKey;
+        return this.secret;
     }
 
     @NotNull
@@ -78,4 +85,9 @@ public class NovaConfig
     {
         return defaultImageId;
     }
-}
+
+    @NotNull
+    public String getDefaultLocationId()
+    {
+        return defaultLocationId;
+    }}

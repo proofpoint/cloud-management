@@ -33,8 +33,8 @@ public class MainModule
         binder.bind(InstanceResource.class).in(Scopes.SINGLETON);
         binder.bind(SizeResource.class).in(Scopes.SINGLETON);
         binder.bind(TagResource.class).in(Scopes.SINGLETON);
-        binder.bind(InstanceConnector.class).to(NovaInstanceConnector.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder).to(NovaConfig.class);
+        binder.bind(InstanceConnector.class).to(JCloudsInstanceConnector.class).in(Scopes.SINGLETON);
+        ConfigurationModule.bindConfig(binder).to(JCloudsConfig.class);
 
         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("cloudmanagement");
     }

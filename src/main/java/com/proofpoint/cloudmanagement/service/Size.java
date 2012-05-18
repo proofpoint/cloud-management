@@ -16,10 +16,9 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Objects;
-import com.proofpoint.experimental.units.DataSize;
-import com.proofpoint.experimental.units.DataSize.Unit;
+import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 import org.codehaus.jackson.annotate.JsonProperty;
-import org.jclouds.openstack.nova.domain.Flavor;
 
 public class Size
 {
@@ -34,14 +33,6 @@ public class Size
         this.cores = cores;
         this.memory = memory;
         this.disk = disk;
-    }
-
-    public static Size fromFlavor(Flavor flavor)
-    {
-        return new Size(flavor.getName(),
-                Objects.firstNonNull(flavor.getVcpus(), 0),
-                new DataSize(Objects.firstNonNull(flavor.getRam(), 0), Unit.MEGABYTE),
-                new DataSize(Objects.firstNonNull(flavor.getDisk(), 0), Unit.GIGABYTE));
     }
 
     @JsonProperty
