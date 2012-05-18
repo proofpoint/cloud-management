@@ -21,12 +21,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.ning.http.util.Base64;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.JsonBodyGenerator;
 import com.proofpoint.http.client.JsonResponseHandler;
 import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.RequestBuilder;
 import com.proofpoint.http.client.StatusResponseHandler;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.json.JsonCodec;
@@ -37,6 +35,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Map;
+
+import org.jclouds.encryption.internal.Base64;
+
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
 
 public class InventoryClient
 {
@@ -63,8 +66,7 @@ public class InventoryClient
     {
         Preconditions.checkNotNull(instanceId, "instanceId is null");
 
-        Request request =
-                RequestBuilder.prepareGet()
+        Request request = prepareGet()
                         .setUri(UriBuilder.fromUri(inventoryHost).path("/pcmsystemname/{instanceId}").build(instanceId))
                         .setHeader(HttpHeaders.AUTHORIZATION, authorization)
                         .build();
@@ -79,8 +81,7 @@ public class InventoryClient
         Preconditions.checkArgument(!Strings.isNullOrEmpty(systemName), "systemName is required");
         Preconditions.checkArgument(!Strings.isNullOrEmpty(authorization), "authToken is required");
 
-        Request request =
-                RequestBuilder.prepareGet()
+        Request request = prepareGet()
                         .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
                         .setHeader("Authorization", authorization)
                         .setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
@@ -99,8 +100,7 @@ public class InventoryClient
     {
         Preconditions.checkNotNull(inventorySystem, "inventorySystem is null");
 
-        Request request =
-                RequestBuilder.preparePut()
+        Request request = preparePut()
                         .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(inventorySystem.getFqdn()))
                         .setHeader(HttpHeaders.AUTHORIZATION, authorization)
                         .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -124,7 +124,7 @@ public class InventoryClient
     static String basicAuthEncode(String user, String pass)
     {
         return String.format("Basic %s",
-                Base64.encode(String.format("%s:%s", user, pass).getBytes(Charsets.UTF_8)));
+                Base64.encodeBytes(String.format("%s:%s", user, pass).getBytes(Charsets.UTF_8)));
     }
 }
 
