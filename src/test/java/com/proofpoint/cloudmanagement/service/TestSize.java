@@ -15,10 +15,9 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.proofpoint.experimental.units.DataSize;
-import com.proofpoint.experimental.units.DataSize.Unit;
+import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.json.JsonCodec;
-import org.jclouds.openstack.nova.domain.Flavor;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -59,13 +58,5 @@ public class TestSize
         assertEquals(encodedSize.get("memory"), testSize.getMemory());
         assertEquals(encodedSize.get("disk"), testSize.getDisk());
         assertEquals(encodedSize.get("cost"), testSize.getCost());
-    }
-
-    @Test
-    public void testConstructionFromFlavor()
-    {
-        Flavor testFlavor = new Flavor(0, "m1.xlarge", 1024, 8192, 8);
-        Size testSize = new Size("m1.xlarge", 8, new DataSize(8, Unit.GIGABYTE), new DataSize(1, Unit.TERABYTE));
-        assertEquals(Size.fromFlavor(testFlavor), testSize);
     }
 }
