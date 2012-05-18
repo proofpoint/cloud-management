@@ -17,15 +17,10 @@ package com.proofpoint.cloudmanagement.service.inventoryclient;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientBinder;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.HttpClientModule;
-
-import javax.inject.Singleton;
-import java.util.concurrent.Executors;
 
 public class InventoryClientModule
         implements Module
@@ -38,6 +33,7 @@ public class InventoryClientModule
         ConfigurationModule.bindConfig(binder).to(InventoryClientConfig.class);
         ConfigurationModule.bindConfig(binder).to(HttpClientConfig.class);
         binder.bind(InventoryClient.class).in(Scopes.SINGLETON);
-        binder.install(new HttpClientModule("inventory", Inventory.class));
+
+        HttpClientBinder.httpClientBinder(binder).bindHttpClient("inventory", Inventory.class);
     }
 }

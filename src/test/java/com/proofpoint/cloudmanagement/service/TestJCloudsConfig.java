@@ -19,17 +19,18 @@ import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
-public class TestNovaConfig
+public class TestJCloudsConfig
 {
 
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(NovaConfig.class)
-                .setApiKey(null)
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(JCloudsConfig.class)
+                .setSecret(null)
                 .setLocation(null)
                 .setUser(null)
-                .setDefaultImageId(null));
+                .setDefaultImageId(null)
+                .setDefaultLocationId(null));
     }
 
     @Test
@@ -37,16 +38,18 @@ public class TestNovaConfig
     {
         ConfigAssertions.assertFullMapping(
                 ImmutableMap.<String, String>builder()
-                        .put("nova.location", "http://localhost:8774")
-                        .put("nova.user", "user")
-                        .put("nova.api-key", "api-key")
-                        .put("nova.default-image-id", "default-image-id")
+                        .put("jclouds.location", "http://localhost:8774")
+                        .put("jclouds.user", "user")
+                        .put("jclouds.secret", "secret")
+                        .put("jclouds.default-image-id", "default-image-id")
+                        .put("jclouds.default-location-id", "default-location-id")
                         .build(),
-                new NovaConfig()
+                new JCloudsConfig()
                         .setLocation("http://localhost:8774")
                         .setUser("user")
-                        .setApiKey("api-key")
-                        .setDefaultImageId("default-image-id"));
+                        .setSecret("secret")
+                        .setDefaultImageId("default-image-id")
+                        .setDefaultLocationId("default-location-id"));
     }
 
 }
