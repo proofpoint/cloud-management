@@ -13,7 +13,7 @@
     
     <groupId>com.proofpoint.cloudmanagement.service</groupId>
     <artifactId>cloud-management</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
 
     <inceptionYear>2011</inceptionYear>
 
