@@ -18,6 +18,10 @@ package com.proofpoint.cloudmanagement.service.inventoryclient;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.cloudmanagement.service.DnsManager;
+import com.proofpoint.cloudmanagement.service.InstanceCreationNotifier;
+import com.proofpoint.cloudmanagement.service.TagManager;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.HttpClientBinder;
 import com.proofpoint.http.client.HttpClientConfig;
@@ -33,6 +37,12 @@ public class InventoryClientModule
         ConfigurationModule.bindConfig(binder).to(InventoryClientConfig.class);
         ConfigurationModule.bindConfig(binder).to(HttpClientConfig.class);
         binder.bind(InventoryClient.class).in(Scopes.SINGLETON);
+
+        binder.bind(DnsManager.class).to(InventoryDnsManager.class).in(Scopes.SINGLETON);
+        binder.bind(TagManager.class).to(InventoryTagManager.class).in(Scopes.SINGLETON);
+
+        Multibinder<InstanceCreationNotifier> instanceCreationNotifierMultibinder = Multibinder.newSetBinder(binder, InstanceCreationNotifier.class);
+        instanceCreationNotifierMultibinder.addBinding().to(InventoryClient.class).in(Scopes.SINGLETON);
 
         HttpClientBinder.httpClientBinder(binder).bindHttpClient("inventory", Inventory.class);
     }

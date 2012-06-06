@@ -30,7 +30,9 @@ public class TestJCloudsConfig
                 .setLocation(null)
                 .setUser(null)
                 .setDefaultImageId(null)
-                .setDefaultLocationId(null));
+                .setApi(null)
+                .setName(null)
+                .setAwsVpcSubnetId(null));
     }
 
     @Test
@@ -38,18 +40,22 @@ public class TestJCloudsConfig
     {
         ConfigAssertions.assertFullMapping(
                 ImmutableMap.<String, String>builder()
-                        .put("jclouds.location", "http://localhost:8774")
-                        .put("jclouds.user", "user")
-                        .put("jclouds.secret", "secret")
-                        .put("jclouds.default-image-id", "default-image-id")
-                        .put("jclouds.default-location-id", "default-location-id")
+                        .put("location", "http://localhost:8774")
+                        .put("user", "user")
+                        .put("secret", "secret")
+                        .put("default-image-id", "default-image-id")
+                        .put("api", "api")
+                        .put("name", "name")
+                        .put("aws-vpc-subnet-id", "aws-vpc-subnet-id")
                         .build(),
                 new JCloudsConfig()
                         .setLocation("http://localhost:8774")
                         .setUser("user")
                         .setSecret("secret")
                         .setDefaultImageId("default-image-id")
-                        .setDefaultLocationId("default-location-id"));
+                        .setApi("api")
+                        .setName("name")
+                        .setAwsVpcSubnetId("aws-vpc-subnet-id"));
     }
 
 }

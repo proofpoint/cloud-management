@@ -15,9 +15,9 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
+import com.proofpoint.json.JsonCodec;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
-import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -35,14 +35,16 @@ public class TestSize
     public void testEquivalence()
     {
         equivalenceTester()
-                .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
-                .addEquivalentGroup(new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.BYTE)))
-                .addEquivalentGroup(new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.BYTE)))
-                .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.BYTE)),
-                                    new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.BYTE)))
+                .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)),
+                        new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)))
+                .addEquivalentGroup(new Size("b", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)),
+                        new Size("b", 1, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)))
+                .addEquivalentGroup(new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)),
+                        new Size("a", 2, new DataSize(1, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)))
+                .addEquivalentGroup(new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)),
+                        new Size("a", 1, new DataSize(2, Unit.BYTE), new DataSize(1, Unit.KILOBYTE)))
+                .addEquivalentGroup(new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.KILOBYTE)),
+                        new Size("a", 1, new DataSize(1, Unit.BYTE), new DataSize(2, Unit.KILOBYTE)))
                 .check();
     }
 
@@ -53,10 +55,9 @@ public class TestSize
         String json = sizeJsonCodec.toJson(testSize);
         Map<String, Object> encodedSize = mapJsonCodec.fromJson(json);
 
-        assertEquals(encodedSize.get("name"), testSize.getName());
+        assertEquals(encodedSize.get("size"), testSize.getSize());
         assertEquals(encodedSize.get("cores"), testSize.getCores());
         assertEquals(encodedSize.get("memory"), testSize.getMemory());
         assertEquals(encodedSize.get("disk"), testSize.getDisk());
-        assertEquals(encodedSize.get("cost"), testSize.getCost());
     }
 }

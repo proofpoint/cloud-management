@@ -16,73 +16,85 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Preconditions;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
-
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 
 public class Instance
 {
-
     private final String id;
     private final String name;
     private final String status;
     private final String size;
+    private final String provider;
+    private final String location;
     private final String hostname;
-    private final List<String> tags;
+    private final Iterable<String> tags;
 
-    @JsonCreator
-    public Instance(
-            @JsonProperty("id") String id,
-            @JsonProperty("name") String name,
-            @JsonProperty("size") String size,
-            @JsonProperty("status") String status,
-            @JsonProperty("hostname") String hostname,
-            @JsonProperty("tags") List<String> tags)
+    public Instance(String id, String name, String size, String status, String location)
+    {
+        this(id, name, size, status, null, location, null, null);
+    }
+
+    public Instance(String id, String name, String size, String status, String provider, String location, String hostname, Iterable<String> tags)
     {
         Preconditions.checkNotNull(id);
         this.id = id;
         this.name = name;
         this.size = size;
         this.status = status;
+        this.provider = provider;
+        this.location = location;
         this.hostname = hostname;
-        this.tags = tags;
+        if (tags != null) {
+            this.tags = ImmutableList.copyOf(tags);
+        }
+        else {
+            this.tags = null;
+        }
     }
 
-    @JsonProperty
     public String getId()
     {
         return id;
     }
 
-    @JsonProperty
     public String getName()
     {
         return name;
     }
 
-    @JsonProperty
     public String getStatus()
     {
         return status;
     }
 
-    @JsonProperty
     public String getSize()
     {
         return size;
     }
 
-    @JsonProperty
+    public String getProvider()
+    {
+        return provider;
+    }
+
+    public String getLocation()
+    {
+        return location;
+    }
+
     public String getHostname()
     {
         return hostname;
     }
 
-    @JsonProperty
-    public List<String> getTags()
+    public Iterable<String> getTags()
     {
         return tags;
+    }
+
+    public Builder toBuilder()
+    {
+        return new Builder().setId(id).setName(name).setStatus(status).setSize(size).setProvider(provider).setLocation(location).setHostname(hostname).setTags(tags);
     }
 
     @Override
@@ -118,8 +130,75 @@ public class Instance
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
+                ", provider='" + provider + '\'' +
+                ", location='" + location + '\'' +
                 ", hostname='" + hostname + '\'' +
-                ", tags='" + tags + '\'' +
+                ", tags=" + tags +
                 '}';
+    }
+
+    public static class Builder
+    {
+        private String id;
+        private String name;
+        private String size;
+        private String status;
+        private String provider;
+        private String location;
+        private String hostname = null;
+        private Iterable<String> tags = null;
+
+        public Builder setId(String id)
+        {
+            this.id = id;
+            return this;
+        }
+
+        public Builder setName(String name)
+        {
+            this.name = name;
+            return this;
+        }
+
+        public Builder setSize(String size)
+        {
+            this.size = size;
+            return this;
+        }
+
+        public Builder setStatus(String status)
+        {
+            this.status = status;
+            return this;
+        }
+
+        public Builder setHostname(String hostname)
+        {
+            this.hostname = hostname;
+            return this;
+        }
+
+        public Builder setTags(Iterable<String> tags)
+        {
+            this.tags = tags;
+            return this;
+        }
+
+        public Builder setProvider(String provider)
+        {
+            this.provider = provider;
+            return this;
+        }
+
+        public Builder setLocation(String location)
+        {
+            this.location = location;
+            return this;
+        }
+
+        public Instance build()
+        {
+            return new Instance(id, name, size, status, provider, location, hostname, tags);
+        }
     }
 }
