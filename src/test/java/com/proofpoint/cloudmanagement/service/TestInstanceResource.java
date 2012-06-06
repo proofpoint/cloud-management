@@ -16,6 +16,9 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.InMemoryTagManager;
+import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.NoOpDnsManager;
 import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -34,21 +37,33 @@ public class TestInstanceResource
     private InMemoryInstanceConnector inMemoryInstanceConnector;
 
     private static final UriInfo INSTANCE_URI_INFO = MockUriInfo.from("http://localhost/v1/instance");
+    private InMemoryTagManager tagManager;
+    private NoOpDnsManager dnsManager;
 
     @BeforeMethod
     public void setupResource()
     {
         inMemoryInstanceConnector = new InMemoryInstanceConnector();
-        instanceResource = new InstanceResource(inMemoryInstanceConnector);
+        tagManager = new InMemoryTagManager();
+        dnsManager = new NoOpDnsManager();
+        instanceResource = new InstanceResource(ImmutableMap.<String, InstanceConnector>of("in-memory-provider", inMemoryInstanceConnector), dnsManager, tagManager);
     }
 
     @Test
     public void testGetInstance()
     {
-        Instance createdInstance = inMemoryInstanceConnector.createInstance("m1.tiny", "mattstep");
-        InstanceRepresentation createdInstanceRepresentation = InstanceRepresentation.fromInstance(createdInstance, InstanceResource.constructSelfUri(INSTANCE_URI_INFO, createdInstance.getId()));
+        String createdInstance = inMemoryInstanceConnector.createInstance("m1.tiny", "mattstep", "in-memory");
+        Instance instance = inMemoryInstanceConnector.getInstance(createdInstance);
+        InstanceRepresentation createdInstanceRepresentation =
+                InstanceRepresentation.fromInstance(
+                        instance.toBuilder()
+                                .setProvider("in-memory-provider")
+                                .setTags(tagManager.getTags(instance))
+                                .setHostname(dnsManager.getFullyQualifiedDomainName(instance))
+                                .build(),
+                        InstanceResource.constructSelfUri(INSTANCE_URI_INFO, createdInstance));
 
-        Response response = instanceResource.getInstance(createdInstance.getId(), INSTANCE_URI_INFO);
+        Response response = instanceResource.getInstance(createdInstance, INSTANCE_URI_INFO);
 
         assertEquals(response.getStatus(), Status.OK.getStatusCode());
         assertEquals(response.getEntity(), createdInstanceRepresentation);
@@ -65,17 +80,17 @@ public class TestInstanceResource
     @Test
     public void testDeleteInstance()
     {
-        Instance createdInstance = inMemoryInstanceConnector.createInstance("m1.tiny", "mattstep");
+        String createdInstance = inMemoryInstanceConnector.createInstance("m1.tiny", "mattstep", "in-memory");
 
-        Response getResponse1 = instanceResource.getInstance(createdInstance.getId(), INSTANCE_URI_INFO);
+        Response getResponse1 = instanceResource.getInstance(createdInstance, INSTANCE_URI_INFO);
 
         assertEquals(getResponse1.getStatus(), Status.OK.getStatusCode());
 
-        Response deleteResponse = instanceResource.deleteInstance(createdInstance.getId());
+        Response deleteResponse = instanceResource.deleteInstance(createdInstance);
 
         assertEquals(deleteResponse.getStatus(), Status.NO_CONTENT.getStatusCode());
 
-        Response getResponse2 = instanceResource.getInstance(createdInstance.getId(), INSTANCE_URI_INFO);
+        Response getResponse2 = instanceResource.getInstance(createdInstance, INSTANCE_URI_INFO);
 
         assertEquals(getResponse2.getStatus(), Status.NOT_FOUND.getStatusCode());
     }
@@ -119,6 +134,18 @@ public class TestInstanceResource
     @Test(expectedExceptions = NullPointerException.class)
     public void testConstructionWithNullInstanceConnectorThrows()
     {
-        new InstanceResource(null);
+        new InstanceResource(null, new NoOpDnsManager(), new InMemoryTagManager());
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testConstructionWithNullDnsManagerThrows()
+    {
+        new InstanceResource(ImmutableMap.<String, InstanceConnector>of("tmp", inMemoryInstanceConnector), null, new InMemoryTagManager());
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testConstructionWithNullTagManagerThrows()
+    {
+        new InstanceResource(ImmutableMap.<String, InstanceConnector>of("tmp", inMemoryInstanceConnector), new NoOpDnsManager(), null);
     }
 }

@@ -87,7 +87,6 @@ For failed requests, the response will contain a JSON body of the following form
 
 It can be difficult to code to all potential failures, but the following errors are known to potentially occur, all of which will have a 400 response code :
 
-- Capacity Unavailable - The instance could not be created because capacity is unavailable to support the request.
 - Size Unavailable - The instance size requested is not supported by the provider at that location.
 - Location Unavailable - The location is unavailable for that provider.
 - Provider Unavailable - There is no provider available to support this request.
@@ -268,3 +267,35 @@ The response will be 200 OK with the following body.
       }
      ]
     }
+
+
+
+Configuration
+=============
+
+Provider Listing
+----------------
+A single configuration property is used to define the providers to allocate.
+
+    cloud-management.providers=devstack,hpcloud,aws,softlayer,rackspace
+
+Individual Providers
+--------------------
+Each provider is then allocated with a collection of configuration properties.
+
+    cloud-management.devstack.api=openstack-nova
+    cloud-management.devstack.name=DevStack edition of OpenStack
+    cloud-management.devstack.location=http://192.168.56.2:5000
+    cloud-management.devstack.user=admin:admin
+    cloud-management.devstack.secret=admin
+    cloud-management.devstack.default-image-id=005dbf05-9e1c-4773-9fbc-48f7eea99aca
+
+The following properties are supported for each provider you specify.  All are required unless otherwise stated.
+
+- api : The jclouds api or provider to use for this provider (see http://www.jclouds.org/documentation/reference/supported-providers).
+- name : A meaningful name for this provider.
+- location : A symantically required endpoint to connect to this provider with.  For some jclouds providers this is not required.  Refer to http://jclouds.org for more information on which cloud providers and apis require this to be specified.
+- user : The user to connect to the specified provider with.
+- secret : The password or shared secret to use when connecting with the provider.
+- default-image-id : The default image to be used when starting instances.
+- aws-vpc-subnet-id : An optionally specified property for ec2 providers that will specify which vpc subnet to create new instances in.

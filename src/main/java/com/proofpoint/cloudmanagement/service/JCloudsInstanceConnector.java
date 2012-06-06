@@ -19,71 +19,79 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.inject.Module;
-import com.proofpoint.cloudmanagement.service.inventoryclient.InventoryClient;
-import com.proofpoint.cloudmanagement.service.inventoryclient.InventorySystem;
+import com.proofpoint.log.Logger;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
-import com.proofpoint.log.Logger;
 import org.jclouds.Constants;
+import org.jclouds.aws.ec2.compute.AWSEC2TemplateOptions;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.ComputeServiceContextFactory;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.domain.ComputeMetadata;
 import org.jclouds.compute.domain.Hardware;
-import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeState;
 import org.jclouds.compute.domain.Processor;
-import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.domain.Volume;
-import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
 import org.jclouds.openstack.keystone.v2_0.config.CredentialType;
 import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+
+import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.collect.ImmutableList.of;
+import static com.google.common.collect.Iterables.any;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.getFirst;
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Iterables.transform;
+import static org.jclouds.domain.LocationScope.PROVIDER;
+import static org.jclouds.domain.LocationScope.REGION;
 
 public class JCloudsInstanceConnector implements InstanceConnector
 {
     private static final Logger log = Logger.get(JCloudsInstanceConnector.class);
 
     private final ComputeService computeService;
-    private static final String OPENSTACK_NOVA_PROVIDER_NAME = "openstack-nova";
-    private final Image defaultImage;
-    private final Location defaultLocation;
-    private final LoadingCache<String, InventorySystem> inventoryCache;
-    private final InventoryClient inventoryClient;
+    private final String defaultImageId;
 
-    private final Cache<String, Instance> instanceCache;
-    private final ImmutableMap<String, Hardware> hardwareCache;
+    private final String name;
 
-    @Inject
-    public JCloudsInstanceConnector(final JCloudsConfig config, final InventoryClient inventoryClient)
+    private final Map<String, ? extends Hardware> hardwareMap;
+    private final Map<String, ? extends Location> locationMap;
+    private final String awsVpcSubnetId;
+
+    public JCloudsInstanceConnector(final JCloudsConfig config)
     {
-        this.inventoryClient = inventoryClient;
+        Preconditions.checkNotNull(config);
+
+        this.name = config.getName();
+        this.awsVpcSubnetId = config.getAwsVpcSubnetId();
 
         Properties overrides = new Properties();
-        overrides.setProperty(Constants.PROPERTY_ENDPOINT, config.getLocation());
+        if (config.getLocation() != null) {
+            overrides.setProperty(Constants.PROPERTY_ENDPOINT, config.getLocation());
+        }
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialType.PASSWORD_CREDENTIALS.toString());
         overrides.setProperty(KeystoneProperties.VERSION, "2.0");
 
         Set<Module> moduleOverrides = ImmutableSet.<Module>of(new JCloudsLoggingAdapterModule());
 
         ComputeServiceContext context = new ComputeServiceContextFactory().createContext(
-           OPENSTACK_NOVA_PROVIDER_NAME,
+                config.getApi(),
                 config.getUser(),
                 config.getSecret(),
                 moduleOverrides,
@@ -91,278 +99,225 @@ public class JCloudsInstanceConnector implements InstanceConnector
 
         computeService = context.getComputeService();
 
-        defaultImage = getImageForName(config.getDefaultImageId());
-        Preconditions.checkNotNull(defaultImage, "No image found for default image id [" + config.getDefaultImageId() + "] please verify that this image exists");
-
-        instanceCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(7, TimeUnit.DAYS)
-                .build();
-
-        ImmutableMap.Builder<String, Hardware> hardwareCacheBuilder = ImmutableMap.builder();
-        for(Hardware hardware : computeService.listHardwareProfiles()) {
-            hardwareCacheBuilder.put(hardware.getName(), hardware);
+        //There are too many images in ec2 to list them all, so we can't verify.
+        if (!config.getApi().equals("aws-ec2")) {
+            Preconditions.checkState(
+                    any(computeService.listImages(), new Predicate<org.jclouds.compute.domain.Image>()
+                    {
+                        @Override
+                        public boolean apply(@Nullable org.jclouds.compute.domain.Image image)
+                        {
+                            return image.getId().endsWith(config.getDefaultImageId());
+                        }
+                    }), "No image found for default image id [" + config.getDefaultImageId() + "] please verify that this image exists");
         }
-        hardwareCache = hardwareCacheBuilder.build();
 
-        defaultLocation = Iterables.find(computeService.listAssignableLocations(), new Predicate<Location>()
+        defaultImageId = config.getDefaultImageId();
+
+        hardwareMap = Maps.uniqueIndex(computeService.listHardwareProfiles(), new Function<Hardware, String>()
         {
             @Override
-            public boolean apply(@Nullable Location location)
+            public String apply(@Nullable Hardware hardware)
             {
-                return location.getId().equals(config.getDefaultLocationId());
+                return firstNonNull(hardware.getName(), hardware.getId());
             }
         });
 
-        inventoryCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(5, TimeUnit.MINUTES)
-                .build(new CacheLoader<String, InventorySystem>()
-                {
-                    @Override
-                    public InventorySystem load(String id)
-                            throws Exception
-                    {
-                        String inventoryName = inventoryClient.getPcmSystemName(id);
-                        return inventoryClient.getSystem(inventoryName);
-                    }
-                });
+        locationMap = Maps.uniqueIndex(computeService.listAssignableLocations(), new Function<Location, String>()
+        {
+            @Override
+            public String apply(@Nullable Location location)
+            {
+                return location.getId();
+            }
+        });
 
         getAllInstances();
     }
 
-    private Image getImageForName(final String defaultImageName)
+    public String createInstance(final String sizeName, String groupName, String locationId)
     {
-        return Iterables.find(computeService.listImages(), new Predicate<org.jclouds.compute.domain.Image>()
-        {
-            @Override
-            public boolean apply(@Nullable org.jclouds.compute.domain.Image image)
-            {
-                return image.getName().equals(defaultImageName);
-            }
-        });
-    }
+        Hardware hardware = hardwareMap.get(sizeName);
+        Location location = locationMap.get(locationId);
 
-    public Instance createInstance(final String sizeName, String username)
-    {
-        Hardware hardware = hardwareCache.get(sizeName);
-
-        Preconditions.checkNotNull(hardware, "No size found for name [" + sizeName + "] please verify that this is a valid size.");
+        Preconditions.checkNotNull(hardware, "No size found for [" + sizeName + "] please verify that this is a valid size.");
+        Preconditions.checkNotNull(location, "No location found for [" + locationId + "] please verify that this is a valid location.");
 
         Set<? extends NodeMetadata> nodes;
         try {
-            nodes = computeService.createNodesInGroup(username, 1, new PcmTemplate(hardware));
+            TemplateBuilder instanceTemplateBuilder = computeService.templateBuilder()
+                    .imageId(String.format("%s/%s", locateParentMostRegionOrZone(location).getId(), defaultImageId))
+                    .fromHardware(hardware)
+                    .locationId(locationId);
+            if (awsVpcSubnetId != null) {
+                instanceTemplateBuilder.options(AWSEC2TemplateOptions.Builder.subnetId(awsVpcSubnetId));
+            }
+
+            nodes = computeService.createNodesInGroup(groupName, 1, instanceTemplateBuilder.build());
         }
-        catch(RunNodesException e) {
-            log.error(e, "Couldn't start up instance requested by %s with size %s", username, sizeName);
+        catch (RunNodesException e) {
+            log.error(e, "Couldn't start up instance requested by %s with size %s", groupName, sizeName);
             throw new RuntimeException(e);
         }
 
-        if(nodes == null || nodes.isEmpty()) {
-            log.error("Couldn't start up instance requested by %s with size %s", username, sizeName);
+        if (nodes == null || nodes.isEmpty()) {
+            log.error("Couldn't start up instance requested by %s with size %s", groupName, sizeName);
             throw new RuntimeException("Unknown failure in starting instance.");
         }
 
-        NodeMetadata node = nodes.iterator().next();
+        return Iterables.getOnlyElement(nodes).getProviderId();
+    }
 
-        try {
-            String inventoryName = inventoryClient.getPcmSystemName(node.getProviderId());
-            InventorySystem inventorySystem = new InventorySystem(inventoryName);
-            inventorySystem.setPicInstance(node.getId());
-            inventoryClient.patchSystem(inventorySystem);
+    private Location locateParentMostRegionOrZone(Location location)
+    {
+        if (location.getParent() == null || location.getParent().getScope() == PROVIDER) {
+            return location;
         }
-        catch (Exception e) {
-            log.error("Expected to get a server name from inventory for serverId [" + node.getId() + "] but caught exception " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
+        return locateParentMostRegionOrZone(location.getParent());
+    }
 
-        return retrieveInstanceByNodeId(node.getId());
+    private Location locateParentMostZone(Location location)
+    {
+        if (location.getParent() == null || any(of(PROVIDER, REGION), equalTo(location.getParent().getScope()))) {
+            return location;
+        }
+        return locateParentMostZone(location.getParent());
     }
 
     public Iterable<Instance> getAllInstances()
     {
-        return Iterables.transform(computeService.listNodesDetailsMatching(Predicates.<ComputeMetadata>alwaysTrue()), new NodeMetadataToInstance());
+        return transform(
+                filter(computeService.listNodesDetailsMatching(Predicates.<ComputeMetadata>alwaysTrue()),
+                        new Predicate<NodeMetadata>()
+                        {
+                            @Override
+                            public boolean apply(@Nullable NodeMetadata input)
+                            {
+                                return input.getState() != NodeState.TERMINATED;
+                            }
+                        }), new NodeMetadataToInstance());
     }
 
-    public Instance getInstance(String id)
+    public Instance getInstance(final String id)
     {
-        return new NodeMetadataToInstance().apply(computeService.getNodeMetadata(defaultLocation.getId() + "/" + id));
+        final Set<? extends NodeMetadata> nodeMetadataSet = getNodesWithProviderId(id);
+
+        if (nodeMetadataSet.isEmpty()) {
+            return null;
+        }
+
+        return new NodeMetadataToInstance().apply(getOnlyElement(nodeMetadataSet));
+    }
+
+    private Set<? extends NodeMetadata> getNodesWithProviderId(final String id)
+    {
+        return computeService.listNodesDetailsMatching(new Predicate<ComputeMetadata>()
+            {
+                @Override
+                public boolean apply(@Nullable ComputeMetadata input)
+                {
+                    return input.getProviderId().equals(id);
+                }
+            });
     }
 
     public InstanceDestructionStatus destroyInstance(String id)
     {
-        if (!instanceExists(id)) {
+        Set<? extends NodeMetadata> toDestroy = getNodesWithProviderId(id);
+
+        if (toDestroy.isEmpty()) {
             return InstanceDestructionStatus.NOT_FOUND;
         }
 
-        computeService.destroyNode(id);
+        computeService.destroyNode(getOnlyElement(toDestroy).getId());
 
         return InstanceDestructionStatus.DESTROYED;
     }
 
-    private boolean instanceExists(String id)
+    public Iterable<Size> getSizes(final String location)
     {
-        return (instanceCache.getIfPresent(id) != null || computeService.getNodeMetadata(id) != null);
-    }
+        return transform(
 
-    private Instance retrieveInstanceByNodeId(String nodeId)
-    {
-        Instance cachedInstance = instanceCache.getIfPresent(nodeId);
-
-        if (cachedInstance != null) {
-            return cachedInstance;
-        }
-
-        NodeMetadata populatedNode = computeService.getNodeMetadata(nodeId);
-
-        if (populatedNode == null) {
-            return null;
-        }
-
-        try {
-            String inventoryName = inventoryClient.getPcmSystemName(populatedNode.getId());
-            InventorySystem inventorySystem = inventoryClient.getSystem(inventoryName);
-
-            Instance instance = new Instance(populatedNode.getProviderId(), populatedNode.getName(), populatedNode.getHardware().getName(),
-                    populatedNode.getState().name(), inventorySystem.getFqdn(), inventorySystem.getTagList());
-
-            if (populatedNode.getState() == NodeState.RUNNING) {
-                instanceCache.put(instance.getId(), instance);
-            }
-            return instance;
-        }
-        catch (Exception e) {
-            log.error("Expected to find an instance for serverId [" + nodeId + "] but caught exception " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Iterable<Size> getSizes()
-    {
-        return Iterables.transform(
                 Iterables.filter(
-                        hardwareCache.values(),
-                        new Predicate<Hardware>()
+                        hardwareMap.entrySet(),
+                        new Predicate<Entry<String, ? extends Hardware>>()
                         {
                             @Override
-                            public boolean apply(@Nullable Hardware input)
+                            public boolean apply(@Nullable Entry<String, ? extends Hardware> input)
                             {
-                                return !input.getName().contains("deprecated");
+                                return !input.getKey().contains("deprecated") && (input.getValue().getLocation() == null || input.getValue().getLocation().getId().equals(location));
                             }
                         }
                 ),
-                new Function<Hardware, Size>() {
+
+                new Function<Entry<String, ? extends Hardware>, Size>()
+                {
                     @Override
-                    public Size apply(@Nullable Hardware input)
+                    public Size apply(@Nullable Entry<String, ? extends Hardware> input)
                     {
                         float cpus = 0;
-                        for(Processor processor : input.getProcessors()) {
+                        for (Processor processor : input.getValue().getProcessors()) {
                             cpus += processor.getCores();
                         }
 
                         float disk = 0;
-                        for(Volume volume : input.getVolumes()) {
+                        for (Volume volume : input.getValue().getVolumes()) {
                             disk += volume.getSize();
                         }
 
-                        return new Size(input.getName(),
-                                        Math.round(cpus),
-                                        new DataSize(input.getRam(), Unit.MEGABYTE),
-                                        new DataSize(disk, Unit.GIGABYTE));
+                        return new Size(input.getKey(), Math.round(cpus), new DataSize(input.getValue().getRam(), Unit.MEGABYTE), new DataSize(disk, Unit.GIGABYTE));
                     }
                 });
     }
 
-    public TagUpdateStatus addTag(String instanceId, String tag)
+    @Override
+    public String getName()
     {
-        Instance instance = getInstance(instanceId);
-        if (instance == null) {
-            return TagUpdateStatus.NOT_FOUND;
-        }
-        try {
-            InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
-            if (inventorySystem == null) {
-                return TagUpdateStatus.NOT_FOUND;
-            }
-            if (inventorySystem.addTag(tag)) {
-                inventoryClient.patchSystem(inventorySystem);
-                instanceCache.invalidate(instanceId);
-            }
-        }
-        catch (Exception e) {
-            log.error("Exception caught attempting to talk to inventory :", e);
-            throw new RuntimeException(e);
-        }
-
-        return TagUpdateStatus.UPDATED;
+        return name;
     }
 
-    public TagUpdateStatus deleteTag(String instanceId, String tag)
+    @Override
+    public Iterable<com.proofpoint.cloudmanagement.service.Location> getLocations()
     {
-        Instance instance = getInstance(instanceId);
-        if (instance == null) {
-            return TagUpdateStatus.NOT_FOUND;
-        }
-        try {
-            InventorySystem inventorySystem = inventoryClient.getSystem(instance.getHostname());
-            if (inventorySystem == null) {
-                return TagUpdateStatus.NOT_FOUND;
+        return transform(computeService.listAssignableLocations(), new Function<Location, com.proofpoint.cloudmanagement.service.Location>()
+        {
+            @Override
+            public com.proofpoint.cloudmanagement.service.Location apply(@Nullable Location input)
+            {
+                return new com.proofpoint.cloudmanagement.service.Location(input.getId(), input.getDescription());
             }
-            if (inventorySystem.deleteTag(tag)) {
-                inventoryClient.patchSystem(inventorySystem);
-                instanceCache.invalidate(instanceId);
-            }
-        }
-        catch (Exception e) {
-            log.error("Exception caught attempting to talk to inventory :", e);
-            throw new RuntimeException(e);
-        }
-
-        return TagUpdateStatus.UPDATED;
+        });
     }
 
-    private class NodeMetadataToInstance implements Function<NodeMetadata, Instance>{
+    @Override
+    public com.proofpoint.cloudmanagement.service.Location getLocation(final String location)
+    {
+        Location jcloudsLocation = Iterables.find(computeService.listAssignableLocations(), new Predicate<Location>()
+        {
+            @Override
+            public boolean apply(@Nullable Location input)
+            {
+                return input.getId().equals(location);
+            }
+        });
+
+        return new com.proofpoint.cloudmanagement.service.Location(jcloudsLocation.getId(), jcloudsLocation.getDescription(), this.getSizes(jcloudsLocation.getId()));
+    }
+
+    private class NodeMetadataToInstance implements Function<NodeMetadata, Instance>
+    {
 
         @Override
         public Instance apply(@Nullable NodeMetadata input)
         {
-            InventorySystem inventorySystem = inventoryCache.getUnchecked(input.getProviderId());
-            return new Instance(input.getProviderId(), input.getName(), input.getHardware().getName(),
-                    input.getState().name(), inventorySystem.getFqdn(), inventorySystem.getTagList());
-        }
-    }
-
-    private class PcmTemplate implements Template
-    {
-        private final Hardware hardware;
-
-        public PcmTemplate(Hardware hardware)
-        {
-
-
-            this.hardware = hardware;
-        }
-
-        @Override
-        public Image getImage()
-        {
-            return defaultImage;
-        }
-
-        @Override
-        public Hardware getHardware()
-        {
-            return hardware;
-        }
-
-        @Override
-        public Location getLocation()
-        {
-            return defaultLocation;
-        }
-
-        @Override
-        public TemplateOptions getOptions()
-        {
-            return new TemplateOptions();
+            return new Instance.Builder()
+                    .setId(input.getProviderId())
+                    .setName(input.getName())
+                    .setSize(firstNonNull(input.getHardware().getName(), input.getHardware().getId()))
+                    .setStatus(input.getState().name())
+                    .setLocation(locateParentMostZone(input.getLocation()).getId())
+                    .setHostname(getFirst(concat(input.getPublicAddresses(), input.getPrivateAddresses()), input.getHostname()))
+                    .build();
         }
     }
 }

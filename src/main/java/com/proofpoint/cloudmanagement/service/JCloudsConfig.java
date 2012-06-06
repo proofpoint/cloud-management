@@ -25,44 +25,59 @@ public class JCloudsConfig
     private String user;
     private String secret;
     private String defaultImageId;
-    private String defaultLocationId;
+    private String name;
+    private String api;
+    private String awsVpcSubnetId;
 
-    @Config("jclouds.location")
+    @Config("api")
+    public JCloudsConfig setApi(String api)
+    {
+        this.api = api;
+        return this;
+    }
+
+    @Config("name")
+    public JCloudsConfig setName(String name)
+    {
+        this.name = name;
+        return this;
+    }
+
+    @Config("location")
     public JCloudsConfig setLocation(String location)
     {
         this.location = location;
         return this;
     }
 
-    @Config("jclouds.user")
+    @Config("user")
     public JCloudsConfig setUser(String user)
     {
         this.user = user;
         return this;
     }
 
-    @Config("jclouds.secret")
+    @Config("secret")
     public JCloudsConfig setSecret(String secret)
     {
         this.secret = secret;
         return this;
     }
 
-    @Config("jclouds.default-image-id")
+    @Config("default-image-id")
     public JCloudsConfig setDefaultImageId(String defaultImageId)
     {
         this.defaultImageId = defaultImageId;
         return this;
     }
 
-    @Config("jclouds.default-location-id")
-    public JCloudsConfig setDefaultLocationId(String defaultLocationId)
+    @Config("aws-vpc-subnet-id")
+    public JCloudsConfig setAwsVpcSubnetId(String awsVpcSubnetId)
     {
-        this.defaultLocationId = defaultLocationId;
+        this.awsVpcSubnetId = awsVpcSubnetId;
         return this;
     }
 
-    @NotNull
     public String getLocation()
     {
         return this.location;
@@ -87,7 +102,19 @@ public class JCloudsConfig
     }
 
     @NotNull
-    public String getDefaultLocationId()
+    public String getName()
     {
-        return defaultLocationId;
-    }}
+        return name;
+    }
+
+    @NotNull
+    public String getApi()
+    {
+        return api;
+    }
+
+    public String getAwsVpcSubnetId()
+    {
+        return awsVpcSubnetId;
+    }
+}

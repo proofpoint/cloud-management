@@ -15,10 +15,12 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.inject.Inject;
 
-import javax.inject.Inject;
+import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -27,29 +29,59 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.LOCATION_UNAVAILABLE;
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.PROVIDER_UNAVAILABLE;
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.SIZE_UNAVAILABLE;
 
 @Path("/v1/instance")
 public class InstancesResource
 {
-
-    private final InstanceConnector instanceConnector;
+    private final Map<String, InstanceConnector> instanceConnectorMap;
+    private final Set<InstanceCreationNotifier> instanceCreationNotifiers;
+    private final TagManager tagManager;
+    private final DnsManager dnsManager;
 
     @Inject
-    public InstancesResource(InstanceConnector instanceConnector)
+    public InstancesResource(Map<String, InstanceConnector> instanceConnectorMap, DnsManager dnsManager, TagManager tagManager)
     {
-        this.instanceConnector = instanceConnector;
+        this.instanceConnectorMap = instanceConnectorMap;
+        this.instanceCreationNotifiers = new ConcurrentSkipListSet<InstanceCreationNotifier>();
+        this.tagManager = tagManager;
+        this.dnsManager = dnsManager;
+    }
+
+    @Inject(optional = true)
+    public void setInstanceCreationNotifiers(Set<InstanceCreationNotifier> instanceCreationNotifiers)
+    {
+        this.instanceCreationNotifiers.addAll(instanceCreationNotifiers);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getInstances(@Context UriInfo uriInfo)
     {
-        Preconditions.checkNotNull(uriInfo);
+        checkNotNull(uriInfo);
 
         ImmutableSet.Builder<InstanceRepresentation> representationBuilder = new ImmutableSet.Builder<InstanceRepresentation>();
-        for (Instance instance : instanceConnector.getAllInstances()) {
-            representationBuilder.add(InstanceRepresentation.fromInstance(instance, InstanceResource.constructSelfUri(uriInfo, instance.getId())));
+
+        for (Map.Entry<String, InstanceConnector> instanceConnectorEntry : instanceConnectorMap.entrySet()) {
+            for (Instance instance : instanceConnectorEntry.getValue().getAllInstances()) {
+                representationBuilder.add(
+                        InstanceRepresentation.fromInstance(
+                                instance.toBuilder()
+                                        .setProvider(instanceConnectorEntry.getKey())
+                                        .setHostname(dnsManager.getFullyQualifiedDomainName(instance))
+                                        .setTags(tagManager.getTags(instance))
+                                        .build(),
+                                InstanceResource.constructSelfUri(uriInfo, instance.getId())));
+            }
         }
         return Response.ok(representationBuilder.build()).build();
     }
@@ -57,12 +89,36 @@ public class InstancesResource
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createInstance(InstanceCreationRequest request, @Context UriInfo uriInfo)
+    public Response createInstance(final InstanceCreationRequest request, @Context UriInfo uriInfo)
     {
-        Preconditions.checkNotNull(request);
-        Preconditions.checkNotNull(uriInfo);
+        checkNotNull(request);
+        checkNotNull(uriInfo);
 
-        Instance instance = instanceConnector.createInstance(request.getSizeName(), request.getUsername());
-        return Response.created(InstanceResource.constructSelfUri(uriInfo, instance.getId())).build();
+        if (!instanceConnectorMap.containsKey(request.getProvider())) {
+            return Response.status(Status.BAD_REQUEST).entity(new InstanceCreationFailedResponse(request, PROVIDER_UNAVAILABLE)).build();
+        }
+
+        if (instanceConnectorMap.get(request.getProvider()).getLocation(request.getLocation()) == null) {
+            return Response.status(Status.BAD_REQUEST).entity(new InstanceCreationFailedResponse(request, LOCATION_UNAVAILABLE)).build();
+        }
+
+        if (!Iterables.any(instanceConnectorMap.get(request.getProvider()).getLocation(request.getLocation()).getAvailableSizes(), new Predicate<Size>()
+        {
+            @Override
+            public boolean apply(@Nullable Size size)
+            {
+                return size.getSize().equals(request.getSize());
+            }
+        })) {
+            return Response.status(Status.BAD_REQUEST).entity(new InstanceCreationFailedResponse(request, SIZE_UNAVAILABLE)).build();
+        }
+
+        String instanceId = instanceConnectorMap.get(request.getProvider()).createInstance(request.getSize(), request.getNamePrefix(), request.getLocation());
+
+        for (InstanceCreationNotifier instanceCreationNotifier : instanceCreationNotifiers) {
+            instanceCreationNotifier.notifyInstanceCreated(instanceId);
+        }
+
+        return Response.created(InstanceResource.constructSelfUri(uriInfo, instanceId)).build();
     }
 }

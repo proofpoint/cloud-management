@@ -37,43 +37,32 @@ public class TestInstanceRepresentation
             throws URISyntaxException
     {
         equivalenceTester()
-                .addEquivalentGroup(
-                        new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"), new URI("http://foo")),
-                        new InstanceRepresentation("test1", "b", "aa", "aaa", "aaaa", Arrays.asList("bbb"), new URI("http://foo")),
-                        new InstanceRepresentation("test1", "a", "bb", "aaa", "aaaa", Arrays.asList("ccc"), new URI("http://foo")),
-                        new InstanceRepresentation("test1", "a", "aa", "bbb", "aaaa", Arrays.asList("ddd"), new URI("http://foo")),
-                        new InstanceRepresentation("test1", "a", "aa", "aaa", "bbbb", Arrays.asList("eee"), new URI("http://foo")),
-                        new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"), new URI("http://bar")))
-                .addEquivalentGroup(
-                        new InstanceRepresentation("test2", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"), new URI("http://foo")),
-                        new InstanceRepresentation("test2", "a", "bb", "aaa", "aaaa", Arrays.asList("bbb"), new URI("http://foo")),
-                        new InstanceRepresentation("test2", "b", "aa", "aaa", "aaaa", Arrays.asList("ccc"), new URI("http://foo")),
-                        new InstanceRepresentation("test2", "a", "aa", "bbb", "aaaa", Arrays.asList("ddd"), new URI("http://foo")),
-                        new InstanceRepresentation("test2", "a", "aa", "aaa", "bbbb", Arrays.asList("eee"), new URI("http://foo")),
-                        new InstanceRepresentation("test2", "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"), new URI("http://bar")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test2", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test2", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "b", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "b", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "bb", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "bb", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "bbb", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "bbb", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "bbbb", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "aaa", "bbbb", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "bbbbb", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "bbbbb", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "bbbbbb", Arrays.asList("aaaaaaa"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "bbbbbb", Arrays.asList("aaaaaaa"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("bbbbbbb"), new URI("http://foo")), new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("bbbbbbb"), new URI("http://foo")))
+                .addEquivalentGroup(new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://bar")), new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://bar")))
                 .check();
-    }
-
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testNullIdThrows()
-            throws URISyntaxException
-    {
-        new InstanceRepresentation(null, "a", "aa", "aaa", "aaaa", Arrays.asList("aaa"), new URI("http://foo"));
     }
 
     @Test
     public void testJsonMarshalling()
             throws URISyntaxException
     {
-        InstanceRepresentation instanceRepresentation = new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa",
-                Arrays.asList("aaa", "bbb"), new URI("http://foo"));
+        InstanceRepresentation instanceRepresentation = new InstanceRepresentation("test1", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa", Arrays.asList("aaaaaaa"), new URI("http://foo"));
         String jsonInstanceRepresentation = instanceRepresentationJsonCodec.toJson(instanceRepresentation);
         Map<String, Object> encodedInstanceRepresentation = mapJsonCodec.fromJson(jsonInstanceRepresentation);
 
-        assertEquals(instanceRepresentation.getId(), encodedInstanceRepresentation.get("id"));
         assertEquals(instanceRepresentation.getName(), encodedInstanceRepresentation.get("name"));
         assertEquals(instanceRepresentation.getSize(), encodedInstanceRepresentation.get("size"));
         assertEquals(instanceRepresentation.getStatus(), encodedInstanceRepresentation.get("status"));
+        assertEquals(instanceRepresentation.getProvider(), encodedInstanceRepresentation.get("provider"));
+        assertEquals(instanceRepresentation.getLocation(), encodedInstanceRepresentation.get("location"));
         assertEquals(instanceRepresentation.getHostname(), encodedInstanceRepresentation.get("hostname"));
         assertEquals(instanceRepresentation.getTags(), encodedInstanceRepresentation.get("tags"));
         assertEquals(instanceRepresentation.getSelf().toString(), encodedInstanceRepresentation.get("self").toString());

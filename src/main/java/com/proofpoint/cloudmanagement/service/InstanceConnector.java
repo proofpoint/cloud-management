@@ -17,9 +17,10 @@ package com.proofpoint.cloudmanagement.service;
 
 public interface InstanceConnector
 {
-    public enum InstanceDestructionStatus {DESTROYED, NOT_FOUND};
-
-    public enum TagUpdateStatus {UPDATED, NOT_FOUND};
+    public enum InstanceDestructionStatus
+    {
+        DESTROYED, NOT_FOUND
+    }
 
     public Iterable<Instance> getAllInstances();
 
@@ -27,11 +28,13 @@ public interface InstanceConnector
 
     public InstanceDestructionStatus destroyInstance(String id);
 
-    public Instance createInstance(String sizeName, String username);
+    public String createInstance(String sizeName, String namePrefix, String locationId);
 
-    public Iterable<Size> getSizes();
+    public Iterable<Size> getSizes(String location);
 
-    public TagUpdateStatus addTag(String instanceId, String tag);
+    public String getName();
 
-    public TagUpdateStatus deleteTag(String instanceId, String tag);
+    public Iterable<Location> getLocations();
+
+    public Location getLocation(String location);
 }

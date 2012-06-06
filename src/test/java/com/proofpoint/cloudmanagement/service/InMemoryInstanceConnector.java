@@ -15,12 +15,12 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -56,38 +56,40 @@ public class InMemoryInstanceConnector implements InstanceConnector
     }
 
     @Override
-    public Instance createInstance(String sizeName, String username)
+    public String createInstance(String sizeName, String namePrefix, String locationId)
     {
         String id = UUID.randomUUID().toString();
-        Instance instance = new Instance(id, username + "'s " + sizeName + " instance", sizeName, "ACTIVE",
-                id + ".foo.com", Arrays.asList("tag1", "tag2"));
+        Instance instance = new Instance(id, namePrefix + "-" + UUID.randomUUID().toString(), sizeName, "ACTIVE", locationId);
         instanceMap.put(id, instance);
-        return instance;
+        return id;
     }
 
     @Override
-    public Iterable<Size> getSizes()
+    public Iterable<Size> getSizes(String location)
     {
         return SIZE_SET;
     }
 
     @Override
-    public TagUpdateStatus addTag(String instanceId, String tag)
+    public String getName()
     {
-        Instance instance = instanceMap.get(instanceId);
-        if (instance == null) {
-            return TagUpdateStatus.NOT_FOUND;
-        }
-        return TagUpdateStatus.UPDATED;
+        return "In Memory Instance Connector";
     }
 
     @Override
-    public TagUpdateStatus deleteTag(String instanceId, String tag)
+    public Iterable<Location> getLocations()
     {
-        Instance instance = instanceMap.get(instanceId);
-        if (instance == null) {
-            return TagUpdateStatus.NOT_FOUND;
+        return ImmutableList.of(new Location("in-memory", "In your memory"));
+    }
+
+    @Override
+    public Location getLocation(String location)
+    {
+        if (location == "in-memory") {
+            return new Location("in-memory", "In your memory", SIZE_SET);
         }
-        return TagUpdateStatus.UPDATED;
+        else {
+            return null;
+        }
     }
 }

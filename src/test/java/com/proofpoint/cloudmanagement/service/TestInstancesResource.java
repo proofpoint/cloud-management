@@ -16,7 +16,10 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.InMemoryTagManager;
+import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.NoOpDnsManager;
 import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,9 +31,13 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.LOCATION_UNAVAILABLE;
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.PROVIDER_UNAVAILABLE;
+import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.SIZE_UNAVAILABLE;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class TestInstancesResource
@@ -39,24 +46,68 @@ public class TestInstancesResource
     private InMemoryInstanceConnector inMemoryInstanceConnector;
 
     private static final UriInfo INSTANCES_URI_INFO = MockUriInfo.from("http://localhost/v1/instance");
+    private NoOpDnsManager dnsManager;
+    private InMemoryTagManager tagManager;
 
     @BeforeMethod
     public void setupResource()
     {
         inMemoryInstanceConnector = new InMemoryInstanceConnector();
-        instancesResource = new InstancesResource(inMemoryInstanceConnector);
+        dnsManager = new NoOpDnsManager();
+        tagManager = new InMemoryTagManager();
+        instancesResource = new InstancesResource(ImmutableMap.<String, InstanceConnector>of("in-memory-provider", inMemoryInstanceConnector), dnsManager, tagManager);
     }
 
     @Test
-    public void testCreateInstaces()
+    public void testCreateInstances()
     {
-        Response response = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
+        Response response = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep", "in-memory-provider", "in-memory"), INSTANCES_URI_INFO);
 
         Instance createdInstance = Iterables.getFirst(inMemoryInstanceConnector.getAllInstances(), null);
 
         assertNotNull(createdInstance);
         assertEquals(response.getStatus(), Status.CREATED.getStatusCode());
         assertEquals(response.getMetadata().getFirst(HttpHeaders.LOCATION), URI.create("http://localhost/v1/instance/" + createdInstance.getId()));
+    }
+
+
+    @Test
+    public void testCreateInstanceWithInvalidProvider()
+    {
+        InstanceCreationRequest request = new InstanceCreationRequest("m1.tiny", "mattstep", "missing-provider", "in-memory");
+        Response response = instancesResource.createInstance(request, INSTANCES_URI_INFO);
+
+        Instance createdInstance = Iterables.getFirst(inMemoryInstanceConnector.getAllInstances(), null);
+
+        assertNull(createdInstance);
+        assertEquals(response.getStatus(), Status.BAD_REQUEST.getStatusCode());
+        assertEquals(response.getEntity(), new InstanceCreationFailedResponse(request, PROVIDER_UNAVAILABLE));
+    }
+
+    @Test
+    public void testCreateInstanceWithInvalidLocation()
+    {
+        InstanceCreationRequest request = new InstanceCreationRequest("m1.tiny", "mattstep", "in-memory-provider", "missing-location");
+        Response response = instancesResource.createInstance(request, INSTANCES_URI_INFO);
+
+        Instance createdInstance = Iterables.getFirst(inMemoryInstanceConnector.getAllInstances(), null);
+
+        assertNull(createdInstance);
+        assertEquals(response.getStatus(), Status.BAD_REQUEST.getStatusCode());
+        assertEquals(response.getEntity(), new InstanceCreationFailedResponse(request, LOCATION_UNAVAILABLE));
+    }
+
+    @Test
+    public void testCreateInstanceWithInvalidSize()
+    {
+        InstanceCreationRequest request = new InstanceCreationRequest("missing-size", "mattstep", "in-memory-provider", "in-memory");
+        Response response = instancesResource.createInstance(request, INSTANCES_URI_INFO);
+
+        Instance createdInstance = Iterables.getFirst(inMemoryInstanceConnector.getAllInstances(), null);
+
+        assertNull(createdInstance);
+        assertEquals(response.getStatus(), Status.BAD_REQUEST.getStatusCode());
+        assertEquals(response.getEntity(), new InstanceCreationFailedResponse(request, SIZE_UNAVAILABLE));
     }
 
     @Test
@@ -72,8 +123,8 @@ public class TestInstancesResource
     @Test
     public void testCreateAndGetInstances()
     {
-        Response createResponse1 = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep"), INSTANCES_URI_INFO);
-        Response createResponse2 = instancesResource.createInstance(new InstanceCreationRequest("m1.small", "mattstep"), INSTANCES_URI_INFO);
+        Response createResponse1 = instancesResource.createInstance(new InstanceCreationRequest("m1.tiny", "mattstep", "in-memory-provider", "in-memory"), INSTANCES_URI_INFO);
+        Response createResponse2 = instancesResource.createInstance(new InstanceCreationRequest("m1.small", "mattstep", "in-memory-provider", "in-memory"), INSTANCES_URI_INFO);
         Response getResponse = instancesResource.getInstances(INSTANCES_URI_INFO);
 
         assertEquals(createResponse1.getStatus(), Status.CREATED.getStatusCode());
@@ -87,7 +138,13 @@ public class TestInstancesResource
                     @Override
                     public InstanceRepresentation apply(@Nullable Instance instance)
                     {
-                        return InstanceRepresentation.fromInstance(instance, InstanceResource.constructSelfUri(INSTANCES_URI_INFO, instance.getId()));
+                        return InstanceRepresentation.fromInstance(
+                                instance.toBuilder()
+                                        .setProvider("in-memory-provider")
+                                        .setHostname(dnsManager.getFullyQualifiedDomainName(instance))
+                                        .setTags(tagManager.getTags(instance))
+                                        .build(),
+                                InstanceResource.constructSelfUri(INSTANCES_URI_INFO, instance.getId()));
                     }
                 }));
     }
@@ -101,7 +158,7 @@ public class TestInstancesResource
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullUriInfoThrowsForCreateServer()
     {
-        instancesResource.createInstance(new InstanceCreationRequest("foo", "bar"), null);
+        instancesResource.createInstance(new InstanceCreationRequest("foo", "bar", "in-memory-provider", "in-memory"), null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
