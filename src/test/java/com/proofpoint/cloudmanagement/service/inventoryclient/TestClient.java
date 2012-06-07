@@ -22,7 +22,6 @@ import com.google.inject.Injector;
 import com.proofpoint.cloudmanagement.service.inventoryclient.MockInventoryServer.MockInventoryServerModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.client.UnexpectedResponseException;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;

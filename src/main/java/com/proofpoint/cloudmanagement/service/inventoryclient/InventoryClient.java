@@ -19,8 +19,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.proofpoint.cloudmanagement.service.InstanceCreationNotifier;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.JsonBodyGenerator;
 import com.proofpoint.http.client.JsonResponseHandler;
@@ -29,23 +34,25 @@ import com.proofpoint.http.client.StatusResponseHandler;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
+import org.jclouds.encryption.internal.Base64;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Map;
-
-import org.jclouds.encryption.internal.Base64;
+import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
 
-public class InventoryClient
+public class InventoryClient implements InstanceCreationNotifier
 {
     private final HttpClient client;
     private final URI inventoryHost;
     private final String authorization;
+
+    private final LoadingCache<String, InventorySystem> inventoryCache;
 
     private static final Logger log = Logger.get(InventoryClient.class);
 
@@ -59,6 +66,39 @@ public class InventoryClient
         this.authorization = basicAuthEncode(config.getUserId(), config.getPassword());
 
         this.client = client;
+
+        this.inventoryCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .build(new CacheLoader<String, InventorySystem>()
+                {
+                    @Override
+                    public InventorySystem load(String id)
+                            throws Exception
+                    {
+                        String inventoryName = getPcmSystemName(id);
+                        return getSystem(inventoryName);
+                    }
+                });
+    }
+
+    public InventorySystem getSystemByInstanceId(String instanceId)
+    {
+        return inventoryCache.getUnchecked(instanceId);
+    }
+
+
+    public void notifyInstanceCreated(String instanceId)
+    {
+        try {
+            String inventoryName = getPcmSystemName(instanceId);
+            InventorySystem inventorySystem = new InventorySystem(inventoryName);
+            inventorySystem.setPicInstance(instanceId);
+            patchSystem(inventorySystem);
+        }
+        catch (Exception e) {
+            log.error("Expected to get a server name from inventory for instanceId [" + instanceId + "] but caught exception " + e.getMessage(), e);
+            throw Throwables.propagate(e);
+        }
     }
 
     public String getPcmSystemName(String instanceId)
@@ -67,9 +107,9 @@ public class InventoryClient
         Preconditions.checkNotNull(instanceId, "instanceId is null");
 
         Request request = prepareGet()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("/pcmsystemname/{instanceId}").build(instanceId))
-                        .setHeader(HttpHeaders.AUTHORIZATION, authorization)
-                        .build();
+                .setUri(UriBuilder.fromUri(inventoryHost).path("/pcmsystemname/{instanceId}").build(instanceId))
+                .setHeader(HttpHeaders.AUTHORIZATION, authorization)
+                .build();
 
         Map<String, String> response = client.execute(request, JsonResponseHandler.createJsonResponseHandler(MAP_JSON_CODEC));
         return response.get("fqdn");
@@ -82,14 +122,14 @@ public class InventoryClient
         Preconditions.checkArgument(!Strings.isNullOrEmpty(authorization), "authToken is required");
 
         Request request = prepareGet()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
-                        .setHeader("Authorization", authorization)
-                        .setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
-                        .build();
+                .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(systemName))
+                .setHeader("Authorization", authorization)
+                .setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
+                .build();
         try {
             return client.execute(request, JsonResponseHandler.createJsonResponseHandler(SYSTEM_DATA_CODEC));
         }
-        catch(Exception e) {
+        catch (Exception e) {
             performRequestAndValidateStatusForBodylessRequests(request);
         }
         return null;
@@ -101,11 +141,11 @@ public class InventoryClient
         Preconditions.checkNotNull(inventorySystem, "inventorySystem is null");
 
         Request request = preparePut()
-                        .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(inventorySystem.getFqdn()))
-                        .setHeader(HttpHeaders.AUTHORIZATION, authorization)
-                        .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                        .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(SYSTEM_DATA_CODEC, inventorySystem))
-                        .build();
+                .setUri(UriBuilder.fromUri(inventoryHost).path("/system/{system}").build(inventorySystem.getFqdn()))
+                .setHeader(HttpHeaders.AUTHORIZATION, authorization)
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(SYSTEM_DATA_CODEC, inventorySystem))
+                .build();
 
         log.info("Patch Request To Inventory [" + request + "] with object [" + inventorySystem + "]");
 
@@ -115,7 +155,7 @@ public class InventoryClient
     private void performRequestAndValidateStatusForBodylessRequests(Request request)
     {
         StatusResponse response = client.execute(request, StatusResponseHandler.createStatusResponseHandler());
-        if(!ImmutableList.of(200, 204).contains(response.getStatusCode())) {
+        if (!ImmutableList.of(200, 204).contains(response.getStatusCode())) {
             throw new RuntimeException(String.format("Request failed with code %d: Body -->|%s|<--", response.getStatusCode(), response.getStatusMessage()));
         }
     }

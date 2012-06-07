@@ -51,7 +51,8 @@ public class Main
                 new LogJmxModule(),
                 new TraceTokenModule(),
                 new NullEventModule(),
-                new InventoryClientModule(),
+                ConditionalModule.installIfPropertyEquals(new InventoryClientModule(), "cloud-management.manager", "Inventory"),
+                ConditionalModule.installIfPropertyEquals(new InMemoryManagerModule(), "cloud-management.manager", "InMemory"),
                 new MainModule());
 
         try {

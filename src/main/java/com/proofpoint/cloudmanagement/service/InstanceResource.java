@@ -15,7 +15,6 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Preconditions;
 import com.proofpoint.cloudmanagement.service.InstanceConnector.InstanceDestructionStatus;
 
 import javax.inject.Inject;
@@ -30,45 +29,63 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Path("/v1/instance/{id: [\\w-]+}")
 public class InstanceResource
 {
-
-    private final InstanceConnector instanceConnector;
+    private final Map<String, InstanceConnector> instanceConnectorMap;
+    private TagManager tagManager;
+    private DnsManager dnsManager;
 
     @Inject
-    public InstanceResource(InstanceConnector instanceConnector)
+    public InstanceResource(Map<String, InstanceConnector> instanceConnectorMap, DnsManager dnsManager, TagManager tagManager)
     {
-        Preconditions.checkNotNull(instanceConnector);
+        checkNotNull(instanceConnectorMap);
+        checkNotNull(tagManager);
+        checkNotNull(dnsManager);
 
-        this.instanceConnector = instanceConnector;
+        this.instanceConnectorMap = instanceConnectorMap;
+        this.tagManager = tagManager;
+        this.dnsManager = dnsManager;
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getInstance(@PathParam("id") String instanceId, @Context UriInfo uriInfo)
     {
-        Preconditions.checkNotNull(instanceId);
-        Preconditions.checkNotNull(uriInfo);
+        checkNotNull(instanceId);
+        checkNotNull(uriInfo);
 
-        Instance instance = instanceConnector.getInstance(instanceId);
-        if (instance == null) {
-            return Response.status(Status.NOT_FOUND).build();
+        for (Map.Entry<String, InstanceConnector> instanceConnectorEntry : instanceConnectorMap.entrySet()) {
+            Instance instance = instanceConnectorEntry.getValue().getInstance(instanceId);
+            if (instance != null) {
+                return Response.ok(
+                        InstanceRepresentation.fromInstance(
+                                instance.toBuilder()
+                                        .setProvider(instanceConnectorEntry.getKey())
+                                        .setHostname(dnsManager.getFullyQualifiedDomainName(instance))
+                                        .setTags(tagManager.getTags(instance))
+                                        .build(),
+                                constructSelfUri(uriInfo, instanceId))).build();
+            }
         }
-        return Response.ok(InstanceRepresentation.fromInstance(instance, uriInfo.getRequestUri())).build();
+        return Response.status(Status.NOT_FOUND).build();
     }
 
     @DELETE
     public Response deleteInstance(@PathParam("id") String instanceId)
     {
-        Preconditions.checkNotNull(instanceId, "Instance ID cannot be null");
+        checkNotNull(instanceId, "Instance ID cannot be null");
 
-        if (instanceConnector.destroyInstance(instanceId) == InstanceDestructionStatus.NOT_FOUND) {
-            return Response.status(Status.NOT_FOUND).build();
+        for (InstanceConnector instanceConnector : instanceConnectorMap.values()) {
+            if (instanceConnector.destroyInstance(instanceId) == InstanceDestructionStatus.DESTROYED) {
+                return Response.noContent().build();
+            }
         }
-
-        return Response.noContent().build();
+        return Response.status(Status.NOT_FOUND).build();
     }
 
     public static URI constructSelfUri(UriInfo uriInfo, String id)

@@ -15,30 +15,28 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Objects;
 import com.proofpoint.units.DataSize;
-import com.proofpoint.units.DataSize.Unit;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class Size
 {
-    private final String name;
+    private final String size;
     private final int cores;
     private final DataSize memory;
     private final DataSize disk;
 
-    public Size(String name, int cores, DataSize memory, DataSize disk)
+    public Size(String size, int cores, DataSize memory, DataSize disk)
     {
-        this.name = name;
+        this.size = size;
         this.cores = cores;
         this.memory = memory;
         this.disk = disk;
     }
 
     @JsonProperty
-    public String getName()
+    public String getSize()
     {
-        return name;
+        return size;
     }
 
     @JsonProperty
@@ -65,12 +63,6 @@ public class Size
         return disk.convertToMostSuccinctDataSize().toString();
     }
 
-    @JsonProperty
-    public double getCost()
-    {
-        return cores + Objects.firstNonNull(memory.convertTo(Unit.GIGABYTE).getValue(), 0.0) + Objects.firstNonNull(disk.convertTo(Unit.TERABYTE).getValue(), 0.0);
-    }
-
     @Override
     public boolean equals(Object o)
     {
@@ -89,7 +81,7 @@ public class Size
         if (disk != null ? !disk.equals(size.disk) : size.disk != null) {
             return false;
         }
-        if (name != null ? !name.equals(size.name) : size.name != null) {
+        if (this.size != null ? !this.size.equals(size.size) : size.size != null) {
             return false;
         }
         if (memory != null ? !memory.equals(size.memory) : size.memory != null) {
@@ -102,7 +94,7 @@ public class Size
     @Override
     public int hashCode()
     {
-        int result = name != null ? name.hashCode() : 0;
+        int result = size != null ? size.hashCode() : 0;
         result = 31 * result + cores;
         result = 31 * result + (memory != null ? memory.hashCode() : 0);
         result = 31 * result + (disk != null ? disk.hashCode() : 0);
@@ -113,7 +105,7 @@ public class Size
     public String toString()
     {
         return "Size{" +
-                "name='" + name + '\'' +
+                "size='" + size + '\'' +
                 ", cores=" + cores +
                 ", memory=" + memory +
                 ", disk=" + disk +

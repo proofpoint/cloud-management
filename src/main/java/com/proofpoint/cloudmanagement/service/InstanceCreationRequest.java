@@ -18,29 +18,50 @@ package com.proofpoint.cloudmanagement.service;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
+import javax.validation.constraints.NotNull;
+
 public class InstanceCreationRequest
 {
-
-    private String sizeName;
-    private String username;
+    private final String size;
+    private final String namePrefix;
+    private final String provider;
+    private final String location;
 
     @JsonCreator
-    public InstanceCreationRequest(@JsonProperty("sizeName") String sizeName, @JsonProperty("username") String username)
+    public InstanceCreationRequest(@JsonProperty("size") String size, @JsonProperty("namePrefix") String namePrefix, @JsonProperty("provider") String provider, @JsonProperty("location") String location)
     {
-        this.sizeName = sizeName;
-        this.username = username;
+        this.size = size;
+        this.namePrefix = namePrefix;
+        this.provider = provider;
+        this.location = location;
     }
 
     @JsonProperty
-    public String getUsername()
+    @NotNull
+    public String getNamePrefix()
     {
-        return username;
+        return namePrefix;
     }
 
     @JsonProperty
-    public String getSizeName()
+    @NotNull
+    public String getSize()
     {
-        return sizeName;
+        return size;
+    }
+
+    @JsonProperty
+    @NotNull
+    public String getProvider()
+    {
+        return provider;
+    }
+
+    @JsonProperty
+    @NotNull
+    public String getLocation()
+    {
+        return location;
     }
 
     @Override
@@ -55,10 +76,16 @@ public class InstanceCreationRequest
 
         InstanceCreationRequest that = (InstanceCreationRequest) o;
 
-        if (sizeName != null ? !sizeName.equals(that.sizeName) : that.sizeName != null) {
+        if (location != null ? !location.equals(that.location) : that.location != null) {
             return false;
         }
-        if (username != null ? !username.equals(that.username) : that.username != null) {
+        if (namePrefix != null ? !namePrefix.equals(that.namePrefix) : that.namePrefix != null) {
+            return false;
+        }
+        if (provider != null ? !provider.equals(that.provider) : that.provider != null) {
+            return false;
+        }
+        if (size != null ? !size.equals(that.size) : that.size != null) {
             return false;
         }
 
@@ -68,8 +95,10 @@ public class InstanceCreationRequest
     @Override
     public int hashCode()
     {
-        int result = sizeName != null ? sizeName.hashCode() : 0;
-        result = 31 * result + (username != null ? username.hashCode() : 0);
+        int result = size != null ? size.hashCode() : 0;
+        result = 31 * result + (namePrefix != null ? namePrefix.hashCode() : 0);
+        result = 31 * result + (provider != null ? provider.hashCode() : 0);
+        result = 31 * result + (location != null ? location.hashCode() : 0);
         return result;
     }
 
@@ -77,8 +106,10 @@ public class InstanceCreationRequest
     public String toString()
     {
         return "InstanceCreationRequest{" +
-                "sizeName='" + sizeName + '\'' +
-                ", username='" + username + '\'' +
+                "size='" + size + '\'' +
+                ", namePrefix='" + namePrefix + '\'' +
+                ", provider='" + provider + '\'' +
+                ", location='" + location + '\'' +
                 '}';
     }
 }

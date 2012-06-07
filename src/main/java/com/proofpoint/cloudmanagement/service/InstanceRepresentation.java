@@ -15,11 +15,10 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.net.URI;
-import java.util.List;
 
 public class InstanceRepresentation
 {
@@ -28,33 +27,33 @@ public class InstanceRepresentation
     private final String name;
     private final String status;
     private final String size;
+    private final String provider;
+    private final String location;
     private final String hostname;
-    private final List<String> tags;
+    private final Iterable<String> tags;
     private final URI self;
 
-    public InstanceRepresentation(
-            String id,
-            String name,
-            String size,
-            String status,
-            String hostname,
-            List<String> tags,
-            URI self)
+    public InstanceRepresentation(String id, String name, String size, String status, String provider, String location, String hostname, Iterable<String> tags, URI self)
     {
-        Preconditions.checkNotNull(id);
         this.id = id;
         this.name = name;
         this.size = size;
         this.status = status;
+        this.provider = provider;
+        this.location = location;
         this.hostname = hostname;
-        this.tags = tags;
+        if (tags == null) {
+            this.tags = null;
+        }
+        else {
+            this.tags = ImmutableList.copyOf(tags);
+        }
         this.self = self;
     }
 
     public static InstanceRepresentation fromInstance(Instance instance, URI self)
     {
-        return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(),
-                instance.getHostname(), instance.getTags(), self);
+        return new InstanceRepresentation(instance.getId(), instance.getName(), instance.getSize(), instance.getStatus(), instance.getProvider(), instance.getLocation(), instance.getHostname(), instance.getTags(), self);
     }
 
     @JsonProperty
@@ -82,13 +81,25 @@ public class InstanceRepresentation
     }
 
     @JsonProperty
+    public String getProvider()
+    {
+        return provider;
+    }
+
+    @JsonProperty
+    public String getLocation()
+    {
+        return location;
+    }
+
+    @JsonProperty
     public String getHostname()
     {
         return hostname;
     }
 
     @JsonProperty
-    public List<String> getTags()
+    public Iterable<String> getTags()
     {
         return tags;
     }
@@ -109,9 +120,33 @@ public class InstanceRepresentation
             return false;
         }
 
-        InstanceRepresentation instance = (InstanceRepresentation) o;
+        InstanceRepresentation that = (InstanceRepresentation) o;
 
-        if (id != null ? !id.equals(instance.id) : instance.id != null) {
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (location != null ? !location.equals(that.location) : that.location != null) {
+            return false;
+        }
+        if (name != null ? !name.equals(that.name) : that.name != null) {
+            return false;
+        }
+        if (provider != null ? !provider.equals(that.provider) : that.provider != null) {
+            return false;
+        }
+        if (self != null ? !self.equals(that.self) : that.self != null) {
+            return false;
+        }
+        if (size != null ? !size.equals(that.size) : that.size != null) {
+            return false;
+        }
+        if (status != null ? !status.equals(that.status) : that.status != null) {
+            return false;
+        }
+        if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
             return false;
         }
 
@@ -121,18 +156,31 @@ public class InstanceRepresentation
     @Override
     public int hashCode()
     {
-        return id != null ? id.hashCode() : 0;
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (size != null ? size.hashCode() : 0);
+        result = 31 * result + (provider != null ? provider.hashCode() : 0);
+        result = 31 * result + (location != null ? location.hashCode() : 0);
+        result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
+        result = 31 * result + (tags != null ? tags.hashCode() : 0);
+        result = 31 * result + (self != null ? self.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString()
     {
-        return "Instance{" +
+        return "InstanceRepresentation{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
-                ", tags='" + tags + '\'' +
+                ", provider='" + provider + '\'' +
+                ", location='" + location + '\'' +
+                ", hostname='" + hostname + '\'' +
+                ", tags=" + tags +
+                ", self=" + self +
                 '}';
     }
 }

@@ -35,12 +35,14 @@ public class JCloudsLoggingAdapterModule extends LoggingModule
         };
     }
 
-    public class JCloudsAdaptedLogger extends BaseLogger {
+    public class JCloudsAdaptedLogger extends BaseLogger
+    {
 
         private final com.proofpoint.log.Logger proofpointLogger;
         private final String category;
 
-        public JCloudsAdaptedLogger(String category) {
+        public JCloudsAdaptedLogger(String category)
+        {
             this.category = category;
             this.proofpointLogger = com.proofpoint.log.Logger.get(category);
         }

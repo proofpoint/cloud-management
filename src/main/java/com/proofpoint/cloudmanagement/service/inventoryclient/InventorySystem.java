@@ -106,7 +106,8 @@ public class InventorySystem
         return this;
     }
 
-    public List<String> getTagList() {
+    public List<String> getTagList()
+    {
         return tags;
     }
 

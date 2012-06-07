@@ -15,6 +15,8 @@
  */
 package com.proofpoint.cloudmanagement.service;
 
+import com.google.common.collect.ImmutableMap;
+import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.InMemoryTagManager;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,15 +35,15 @@ public class TestTagResource
     public void setupResource()
     {
         instanceConnector = new InMemoryInstanceConnector();
-        tagResource = new TagResource(instanceConnector);
+        tagResource = new TagResource(ImmutableMap.<String, InstanceConnector>of("tmp", instanceConnector), new InMemoryTagManager());
     }
 
     @Test
     public void testAddTag()
     {
-        Instance createdInstance = instanceConnector.createInstance("m1.tiny", "wyan");
-        Response response1 = tagResource.addTag(createdInstance.getId(), "new tag");
-        assertEquals(Status.OK.getStatusCode(), response1.getStatus());
+        String createdInstance = instanceConnector.createInstance("m1.tiny", "wyan", "in-memory");
+        Response response1 = tagResource.addTag(createdInstance, "new tag");
+        assertEquals(Status.NO_CONTENT.getStatusCode(), response1.getStatus());
         Response response2 = tagResource.addTag(UUID.randomUUID().toString(), "new tag");
         assertEquals(Status.NOT_FOUND.getStatusCode(), response2.getStatus());
     }
@@ -49,8 +51,8 @@ public class TestTagResource
     @Test
     public void testDeleteTag()
     {
-        Instance createdInstance = instanceConnector.createInstance("m1.tiny", "wyan");
-        Response response1 = tagResource.deleteTag(createdInstance.getId(), "new tag");
+        String createdInstance = instanceConnector.createInstance("m1.tiny", "wyan", "in-memory");
+        Response response1 = tagResource.deleteTag(createdInstance, "new tag");
         assertEquals(Status.NO_CONTENT.getStatusCode(), response1.getStatus());
         Response response2 = tagResource.deleteTag(UUID.randomUUID().toString(), "new tag");
         assertEquals(Status.NOT_FOUND.getStatusCode(), response2.getStatus());
@@ -67,5 +69,4 @@ public class TestTagResource
     {
         tagResource.addTag(null, "new tag");
     }
-
 }
