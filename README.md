@@ -283,6 +283,8 @@ Individual Providers
 --------------------
 Each provider is then allocated with a collection of configuration properties.
 
+At this commit, this is only tested for openstack-nova (against Openstack Essex) and aws-ec2.
+
     cloud-management.devstack.api=openstack-nova
     cloud-management.devstack.name=DevStack edition of OpenStack
     cloud-management.devstack.location=http://192.168.56.2:5000
