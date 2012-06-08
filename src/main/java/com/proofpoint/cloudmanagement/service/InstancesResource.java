@@ -16,6 +16,7 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
@@ -44,7 +45,7 @@ import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedRespo
 public class InstancesResource
 {
     private final Map<String, InstanceConnector> instanceConnectorMap;
-    private final Set<InstanceCreationNotifier> instanceCreationNotifiers;
+    private final ConcurrentHashMultiset<InstanceCreationNotifier> instanceCreationNotifiers;
     private final TagManager tagManager;
     private final DnsManager dnsManager;
 
@@ -52,7 +53,7 @@ public class InstancesResource
     public InstancesResource(Map<String, InstanceConnector> instanceConnectorMap, DnsManager dnsManager, TagManager tagManager)
     {
         this.instanceConnectorMap = instanceConnectorMap;
-        this.instanceCreationNotifiers = new ConcurrentSkipListSet<InstanceCreationNotifier>();
+        this.instanceCreationNotifiers = ConcurrentHashMultiset.<InstanceCreationNotifier>create();
         this.tagManager = tagManager;
         this.dnsManager = dnsManager;
     }
