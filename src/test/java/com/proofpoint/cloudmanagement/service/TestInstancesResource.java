@@ -16,11 +16,14 @@
 package com.proofpoint.cloudmanagement.service;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ConcurrentHashMultiset;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.InMemoryTagManager;
 import com.proofpoint.cloudmanagement.service.InMemoryManagerModule.NoOpDnsManager;
 import com.proofpoint.jaxrs.testing.MockUriInfo;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -30,6 +33,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.LOCATION_UNAVAILABLE;
 import static com.proofpoint.cloudmanagement.service.InstanceCreationFailedResponse.InstanceCreationError.PROVIDER_UNAVAILABLE;
@@ -56,6 +61,17 @@ public class TestInstancesResource
         dnsManager = new NoOpDnsManager();
         tagManager = new InMemoryTagManager();
         instancesResource = new InstancesResource(ImmutableMap.<String, InstanceConnector>of("in-memory-provider", inMemoryInstanceConnector), dnsManager, tagManager);
+        Set<InstanceCreationNotifier> instanceCreationNotifierSet = new HashSet();
+        instanceCreationNotifierSet.add(new InstanceCreationNotifier()
+        {
+            @Override
+            public void notifyInstanceCreated(String instanceId)
+            {
+                assertNotNull(instanceId);
+                assertNotNull(inMemoryInstanceConnector.getInstance(instanceId));
+            }
+        });
+        instancesResource.setInstanceCreationNotifiers(instanceCreationNotifierSet);
     }
 
     @Test
