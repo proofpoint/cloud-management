@@ -149,8 +149,12 @@ public class JCloudsInstanceConnector implements InstanceConnector
                     .imageId(String.format("%s/%s", locateParentMostRegionOrZone(location).getId(), defaultImageId))
                     .fromHardware(hardware)
                     .locationId(locationId);
+
             if (awsVpcSubnetId != null) {
-                instanceTemplateBuilder.options(AWSEC2TemplateOptions.Builder.subnetId(awsVpcSubnetId));
+                instanceTemplateBuilder.options(AWSEC2TemplateOptions.Builder.subnetId(awsVpcSubnetId).blockUntilRunning(false));
+            }
+            else {
+                instanceTemplateBuilder.options(computeService.templateOptions().blockUntilRunning(false));
             }
 
             nodes = computeService.createNodesInGroup(groupName, 1, instanceTemplateBuilder.build());
